@@ -7,7 +7,7 @@ Usage: python3 <this file>
 
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout
+from keras.layers import Dense, Activation, Dropout, SimpleRNN
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
@@ -25,16 +25,16 @@ x_test = x_test.astype('float32')/255
 
 input_size = image_size*image_size
 batch_size = 128
-hidden_units = 512
+hidden_units = 256
 dropout = 0.4
 
 model = Sequential()
 model.add(Dense(hidden_units, input_dim=input_size))
 model.add(Activation('relu'))
-model.add(Dropout(dropout))
+# model.add(Dropout(dropout))
 model.add(Dense(hidden_units))
 model.add(Activation('relu'))
-model.add(Dropout(dropout))
+# model.add(Dropout(dropout))
 model.add(Dense(num_labels))
 model.add(Activation('softmax'))
 model.summary()
@@ -43,5 +43,4 @@ model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accura
 model.fit(x_train, y_train, epochs=200, batch_size=batch_size)
 
 score = np.asarray(model.evaluate(x_test, y_test, batch_size=batch_size))*100.0
-# Accuracy: 86.0%
 print("\nTest accuracy: %.1f%%" % score[1])
