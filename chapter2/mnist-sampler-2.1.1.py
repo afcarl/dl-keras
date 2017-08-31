@@ -11,6 +11,11 @@ import matplotlib.pyplot as plt
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
+unique, counts = np.unique(y_train, return_counts=True)
+print("Train labels: ", dict(zip(unique, counts)))
+unique, counts = np.unique(y_test, return_counts=True)
+print("Test labels: ", dict(zip(unique, counts)))
+
 indexes = np.random.randint(0,x_train.shape[0], size=10)
 images = x_train[indexes]
 labels = y_train[indexes]
