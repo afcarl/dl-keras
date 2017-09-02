@@ -28,7 +28,7 @@ batch_size = 128
 kernel_size = 3
 pool_size = 2
 filters = 64
-dropout = 0.5
+dropout = 0.2
 
 model = Sequential()
 model.add(Conv2D(filters=filters, kernel_size=kernel_size, activation='relu', input_shape=input_shape))

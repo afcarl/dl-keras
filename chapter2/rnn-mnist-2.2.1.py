@@ -18,29 +18,24 @@ y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
 image_size = x_train.shape[1]
-x_train = np.reshape(x_train, [-1,image_size*image_size])
+x_train = np.reshape(x_train,[-1,image_size,image_size])
+x_test = np.reshape(x_test,[-1,image_size,image_size])
 x_train = x_train.astype('float32')/255
-x_test = np.reshape(x_test, [-1,image_size*image_size])
 x_test = x_test.astype('float32')/255
 
-input_size = image_size*image_size
+input_shape = (image_size,image_size)
 batch_size = 128
 hidden_units = 256
-dropout = 0.4
+dropout = 0.2
 
 model = Sequential()
-model.add(Dense(hidden_units, input_dim=input_size))
-model.add(Activation('relu'))
-# model.add(Dropout(dropout))
-model.add(Dense(hidden_units))
-model.add(Activation('relu'))
-# model.add(Dropout(dropout))
+model.add(SimpleRNN(hidden_units, dropout=dropout, input_shape=input_shape))
 model.add(Dense(num_labels))
 model.add(Activation('softmax'))
 model.summary()
 
 model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
-model.fit(x_train, y_train, epochs=200, batch_size=batch_size)
+model.fit(x_train, y_train, epochs=20, batch_size=batch_size)
 
 score = np.asarray(model.evaluate(x_test, y_test, batch_size=batch_size))*100.0
 print("\nTest accuracy: %.1f%%" % score[1])
