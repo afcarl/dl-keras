@@ -31,18 +31,23 @@ filters = 64
 dropout = 0.2
 
 model = Sequential()
-model.add(Conv2D(filters=filters, kernel_size=kernel_size, activation='relu', input_shape=input_shape))
+model.add(Conv2D(filters=filters,\
+        kernel_size=kernel_size, activation='relu',\
+        input_shape=input_shape))
 model.add(MaxPooling2D(pool_size))
-model.add(Conv2D(filters=filters, kernel_size=kernel_size, activation='relu'))
+model.add(Conv2D(filters=filters,\
+        kernel_size=kernel_size, activation='relu'))
 model.add(MaxPooling2D(pool_size))
-model.add(Conv2D(filters=filters, kernel_size=kernel_size, activation='relu'))
+model.add(Conv2D(filters=filters,\
+        kernel_size=kernel_size, activation='relu'))
 model.add(Flatten())
 model.add(Dropout(dropout))
 model.add(Dense(num_labels))
 model.add(Activation('softmax'))
 model.summary()
 
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy',\
+        optimizer='adam', metrics=['accuracy'])
 model.fit(x_train, y_train, epochs=20, batch_size=batch_size)
 
 score = np.asarray(model.evaluate(x_test, y_test, batch_size=batch_size))*100.0
