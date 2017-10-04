@@ -1,5 +1,6 @@
-''' Trains a simplified resnet on the MNIST dataset.
-    Gets to 99.4% test accuracy after 50 epochs
+''' Trains a 6-layer ResNet on the MNIST dataset.
+    Gets to 99.4% test accuracy in 50 epochs
+    4sec per epoch on GTX 1080
 '''
 
 from __future__ import print_function

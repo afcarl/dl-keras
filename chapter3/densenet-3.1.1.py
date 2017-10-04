@@ -1,7 +1,8 @@
-''' Trains a simplified densenet on the MNIST dataset.
-    Since the network is not deep, no bottleneck or transition layer is used.
+''' Trains a 6-layer densenet on the MNIST dataset.
+    Since the network is not deep, no transition layer is used.
     Dilated cnn expands the coverage of the kernel for constant dimension feature maps
-    Gets up to 99.32% test accuracy after 12 epochs
+    Gets up to 99.3% test accuracy in 50 epochs
+    18sec per epoch on GTX 1080
 '''
 
 from __future__ import print_function
@@ -47,16 +48,21 @@ xin = keras.layers.Input(shape=input_shape)
 dr = 1
 x = xin
 y = None
-for i in range(6):
+for i in range(3):
     if y is not None:
         x = keras.layers.concatenate([x, y])
     y = BatchNormalization()(x)
     y = Activation('relu')(y)
+    y = Conv2D(filters=16, kernel_size=1, padding='same')(y)
+    y = BatchNormalization()(y)
+    y = Activation('relu')(y)
     y = Conv2D(filters=16, kernel_size=3, padding='same', dilation_rate=dr)(y)
+    y = Dropout(0.2)(y)
     dr += 1
+
 y = keras.layers.pooling.AveragePooling2D(2)(y)
 y = keras.layers.Flatten()(y)
-y = Dropout(0.4)(y)
+y = Dropout(0.2)(y)
 yout = Dense(num_classes, activation='softmax')(y)
         
 model = Model(inputs=[xin], outputs=[yout])
