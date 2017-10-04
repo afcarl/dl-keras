@@ -48,7 +48,7 @@ model.summary()
 
 model.compile(loss='categorical_crossentropy',\
         optimizer='adam', metrics=['accuracy'])
-model.fit(x_train, y_train, epochs=20, batch_size=batch_size)
+model.fit(x_train, y_train, epochs=10, batch_size=batch_size)
 
 score = np.asarray(model.evaluate(x_test, y_test, batch_size=batch_size))*100.0
 print("\nTest accuracy: %.1f%%" % score[1])
