@@ -1,6 +1,9 @@
 ''' Trains a ResNet on the CIFAR10 dataset.
-    Greater than 87% test accuracy after 40 epochs
-    31per epoch on GTX 1080Ti
+    Greater than 91% test accuracy (0.52 val_loss) after 50 epochs
+    48sec per epoch on GTX 1080Ti
+
+    Deep Residual Learning for Image Recognition
+    https://arxiv.org/pdf/1512.03385.pdf
 '''
 
 from __future__ import print_function
@@ -21,7 +24,6 @@ import os
 batch_size = 32
 num_classes = 10
 epochs = 100
-channel_axis = 3
 
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
@@ -32,7 +34,6 @@ if K.image_data_format() == 'channels_first':
     x_train = x_train.reshape(x_train.shape[0], channels, img_rows, img_cols)
     x_test = x_test.reshape(x_test.shape[0], channels, img_rows, img_cols)
     input_shape = (channels, img_rows, img_cols)
-    channel_axis = 1
 else:
     x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, channels)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, channels)
@@ -52,14 +53,20 @@ y_test = keras.utils.to_categorical(y_test, num_classes)
 xin = Input(shape=input_shape)
 
 filters = 64
-blocks = 3
-sub_blocks = 3
+blocks = 4
+sub_blocks = 2
 x = Conv2D(filters=filters, kernel_size=7, padding='same', strides=2,
-                    data_format=K.image_data_format(),
                     kernel_initializer="he_normal", kernel_regularizer=l2(1e-4))(xin)
-x = BatchNormalization(axis=channel_axis)(x)
+x = BatchNormalization()(x)
 x = Activation('relu')(x)        
-x = MaxPooling2D(pool_size=3, strides=2, padding="same")(x)
+
+# Orig paper uses max pool after 1st conv. Reaches up 87% acc if use_max_pool = True.
+# Cifar10 images are already too small at 32x32 to be maxpooled. So, we skip.
+use_max_pool = False
+if use_max_pool:
+    x = MaxPooling2D(pool_size=3, strides=2, padding="same")(x)
+    blocks = 3
+
 for i in range(blocks):
     for j in range(sub_blocks):
         strides = 1
@@ -67,25 +74,21 @@ for i in range(blocks):
         if is_first_layer_but_not_first_block: 
             strides = 2
         y = Conv2D(filters=filters, kernel_size=3, padding='same', strides=strides,
-                    data_format=K.image_data_format(),
                     kernel_initializer="he_normal", kernel_regularizer=l2(1e-4))(x)
-        y = BatchNormalization(axis=channel_axis)(y)
+        y = BatchNormalization()(y)
         y = Activation('relu')(y)
         y = Conv2D(filters=filters, kernel_size=3, padding='same',
-                    data_format=K.image_data_format(),
                     kernel_initializer="he_normal", kernel_regularizer=l2(1e-4))(y)
-        y = BatchNormalization(axis=channel_axis)(y)
+        y = BatchNormalization()(y)
         if is_first_layer_but_not_first_block: 
             x = Conv2D(filters=filters, kernel_size=1, padding='same', strides=2,
-                    data_format=K.image_data_format(),
                     kernel_initializer="he_normal", kernel_regularizer=l2(1e-4))(x)
         x = keras.layers.add([x, y])
         x = Activation('relu')(x)
 
     filters = 2*filters
-    sub_blocks += 1
 
-x = AveragePooling2D(data_format=K.image_data_format())(x)
+x = AveragePooling2D()(x)
 y = Flatten()(x)
 yout = Dense(num_classes, activation='softmax', kernel_initializer="he_normal")(y)
 model = Model(inputs=[xin], outputs=[yout])
@@ -93,9 +96,9 @@ model.compile(loss='categorical_crossentropy', optimizer=Adam(),
               metrics=['accuracy'])
 model.summary()
 
+# Save model and weights
 save_dir = os.path.join(os.getcwd(), 'saved_models')
 model_name = "cifar10_resnet_model.hdf5" 
-# Save model and weights
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 filepath = os.path.join(save_dir, model_name)
@@ -140,12 +143,15 @@ else:
                         callbacks=callbacks)
 
 
-score = model.evaluate(x_test, y_test, verbose=0)
-# Evaluate model with test data set and share sample prediction results
+score = model.evaluate(x_test, y_test, verbose=1)
+print("")
+print('Test loss:', score[0])
+print('Test accuracy:', score[1])
+
 score = model.evaluate_generator(datagen.flow(x_test, y_test,
                                       batch_size=batch_size,
                                       shuffle=False),
                                       steps=x_test.shape[0] // batch_size,
                                       workers=4)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
+print('Data gen test loss:', score[0])
+print('Data gen test accuracy:', score[1])
