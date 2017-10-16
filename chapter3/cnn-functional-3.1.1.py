@@ -6,9 +6,9 @@ Usage: python3 <this file>
 '''
 
 import numpy as np
-from keras.models import Sequential
-from keras.layers import Activation, Dense, Dropout
+from keras.layers import Activation, Dense, Dropout, Input
 from keras.layers import Conv2D, MaxPooling2D, Flatten
+from keras.models import Model
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
@@ -29,27 +29,30 @@ batch_size = 128
 kernel_size = 3
 pool_size = 2
 filters = 64
-dropout = 0.2
+dropout = 0.3
 
-model = Sequential()
-model.add(Conv2D(filters=filters,
-                 kernel_size=kernel_size, activation='relu',
-                 input_shape=input_shape))
-model.add(MaxPooling2D(pool_size))
-model.add(Conv2D(filters=filters,
-                 kernel_size=kernel_size, activation='relu'))
-model.add(MaxPooling2D(pool_size))
-model.add(Conv2D(filters=filters,
-                 kernel_size=kernel_size, activation='relu'))
-model.add(Flatten())
-model.add(Dropout(dropout))
-model.add(Dense(num_labels))
-model.add(Activation('softmax'))
+inputs = Input(shape=input_shape)
+y = Conv2D(filters=filters, kernel_size=kernel_size,
+           activation='relu')(inputs)
+y = MaxPooling2D()(y)
+y = Conv2D(filters=filters, kernel_size=kernel_size,
+           activation='relu')(y)
+y = MaxPooling2D()(y)
+y = Conv2D(filters=filters, kernel_size=kernel_size,
+           activation='relu')(y)
+y = Flatten()(y)
+y = Dropout(dropout)(y)
+y = Dense(num_labels)(y)
+outputs = Activation('softmax')(y)
+
+model = Model(inputs=inputs, outputs=outputs)
 model.summary()
 
 model.compile(loss='categorical_crossentropy',
               optimizer='adam', metrics=['accuracy'])
-model.fit(x_train, y_train, epochs=10, batch_size=batch_size)
+model.fit(x_train, y_train,
+          validation_data=(x_test, y_test),
+          epochs=20, batch_size=batch_size)
 
 score = model.evaluate(x_test, y_test, batch_size=batch_size)
 print("\nTest accuracy: %.1f%%" % (100.0 * score[1]))

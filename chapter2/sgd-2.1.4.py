@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 
 x = np.arange(-1, 2, 0.1)
 c = [1, -1, -1]
-d = [2,-1]
-y = np.polyval(c,x)
-z = np.polyval(d,x)
+d = [2, -1]
+y = np.polyval(c, x)
+z = np.polyval(d, x)
 plt.xlabel('x')
 plt.ylabel('y and dy/dx')
 plt.plot(x, y, label="y=x^2 -x -1")

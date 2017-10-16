@@ -14,9 +14,9 @@ input_dim = 12
 units = 512
 n_activities = 5
 model = Sequential()
-model.add(SimpleRNN(units=units, dropout=0.2, \
-        input_shape=(timesteps, input_dim)))
+model.add(SimpleRNN(units=units, dropout=0.2,
+                    input_shape=(timesteps, input_dim)))
 model.add(Dense(n_activities, activation='softmax'))
-model.compile(loss='categorical_crossentropy', \
-        optimizer=Adam(), metrics=['accuracy'])
+model.compile(loss='categorical_crossentropy',
+              optimizer=Adam(), metrics=['accuracy'])
 model.summary()

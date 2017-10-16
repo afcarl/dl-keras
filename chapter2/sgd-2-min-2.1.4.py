@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 x = np.arange(-2.5, 2.5, 0.1)
 c = [1, -0.2, -5, 0, 4]
 d = [4, -0.6, -10, 0]
-y = np.polyval(c,x)
-z = np.polyval(d,x)
+y = np.polyval(c, x)
+z = np.polyval(d, x)
 plt.xlabel('x')
 plt.ylabel('y and dy/dx')
 plt.plot(x, y, label="y=x^4 -0.2x^3 -5x^2 +4")
