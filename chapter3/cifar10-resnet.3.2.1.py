@@ -1,10 +1,12 @@
 """Trains a ResNet on the CIFAR10 dataset.
 
-Greater than 91% test accuracy (0.52 val_loss) after 50 epochs
-48sec per epoch on GTX 1080Ti
-
+ResNet v1
 Deep Residual Learning for Image Recognition
 https://arxiv.org/pdf/1512.03385.pdf
+
+ResNet v2
+Identity Mappings in Deep Residual Networks
+https://arxiv.org/pdf/1603.05027.pdf
 """
 
 from __future__ import print_function
@@ -26,15 +28,20 @@ batch_size = 32
 epochs = 200
 data_augmentation = True
 
-# From original paper
-# Model      |  n   | Tested        | Orig paper   | sec/epoch
-#            |      | Accuracy (%)  | Accuracy (%) | GTX 1080Ti
-# ResNet20   |  3   | 92.2 (91.8 F) | 91.25        | 58
-# ResNet32   |  5   | 92.2 (92.0 F) | 92.49        | 96
-# ResNet44   |  7   | 88.4 (89.1)   | 92.83        | 128
-# ResNet56   |  9   | 89.1 (90.1)   | 93.03        | 163
-# ResNet100  |  18  |               | 93.57        | 
+#           |      |           | Orig Paper|           |
+# Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | sec/epoch
+#           |      | %Accuracy | %Accuracy | %Accuracy | (GTX 1080Ti
+# ResNet20  |  3   | 92.2      | 91.25     |           | 58
+# ResNet32  |  5   | 92.2      | 92.49     |           | 96
+# ResNet44  |  7   | 91.07     | 92.83     |           | 128
+# ResNet56  |  9   | 89.1      | 93.03     |           | 163
+# ResNet110 |  18  |           | 93.39     | 
 n = 7
+
+# Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
+version = 2
+
+# Subtracting pixel mean improves accuracy
 use_pix_mean = True
 
 # Network architecture params.
@@ -42,8 +49,8 @@ num_classes = 10
 num_filters = 16
 num_blocks = 3
 num_sub_blocks = 2 * n
-use_max_pool = False
 
+# Learning rate scheduler - called every epoch as part of callbacks
 def lr_schedule(epoch):
     lr = 1e-3
     if epoch > 160:
@@ -128,6 +135,8 @@ for i in range(num_blocks):
                    kernel_initializer='he_normal',
                    kernel_regularizer=l2(1e-4))(y)
         y = BatchNormalization()(y)
+        if version == 2:
+            y = Activation('relu')(y)
         if is_first_layer_but_not_first_block:
             x = Conv2D(num_filters,
                        kernel_size=1,
@@ -136,7 +145,8 @@ for i in range(num_blocks):
                        kernel_initializer='he_normal',
                        kernel_regularizer=l2(1e-4))(x)
         x = keras.layers.add([x, y])
-        x = Activation('relu')(x)
+        if version != 2:
+            x = Activation('relu')(x)
 
     num_filters = 2 * num_filters
 
@@ -153,6 +163,11 @@ model.compile(loss='categorical_crossentropy',
               optimizer=Adam(lr=lr_schedule(0)),
               metrics=['accuracy'])
 model.summary()
+
+if version == 2:
+    print("ResNet v2")
+else:
+    print("ResNet v1")
 
 # Prepare model model saving directory.
 save_dir = os.path.join(os.getcwd(), 'saved_models')
