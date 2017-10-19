@@ -1,24 +1,26 @@
-"""Trains a ResNet on the CIFAR10 dataset.
+"""Trains a 100-Layer DenseNet on the CIFAR10 dataset.
 
-Greater than 91% test accuracy (0.52 val_loss) after 50 epochs
-48sec per epoch on GTX 1080Ti
+With data augmentation:
+Greater than 93.5% test accuracy in 100 epochs
+10min per epoch on GTX 1080Ti
 
-Deep Residual Learning for Image Recognition
-https://arxiv.org/pdf/1512.03385.pdf
+Densely Connected Convolutional Networks
+https://arxiv.org/pdf/1608.06993.pdf
+http://openaccess.thecvf.com/content_cvpr_2017/papers/
+    Huang_Densely_Connected_Convolutional_CVPR_2017_paper.pdf
+Network below is similar to 100-Layer DenseNet-BC (k=12)
 """
 
 from __future__ import print_function
 import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import MaxPooling2D, AveragePooling2D, Input, Flatten
-from keras.optimizers import Adam
+from keras.layers import MaxPooling2D, AveragePooling2D, Input, Flatten, Dropout
+from keras.optimizers import RMSprop
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from keras.preprocessing.image import ImageDataGenerator
-from keras.regularizers import l2
 from keras import backend as K
 from keras.models import Model
 from keras.datasets import cifar10
-import numpy as np
 import os
 
 # Training params.
@@ -28,10 +30,12 @@ data_augmentation = True
 
 # Network architecture params.
 num_classes = 10
-num_filters = 64
-num_blocks = 4
-num_sub_blocks = 2
+num_dense_blocks = 3
+num_bottleneck_layers = 32
 use_max_pool = False
+growth_rate = 12
+num_filters_bef_dense_block = 2 * growth_rate
+compression_factor = 0.5
 
 # Load the CIFAR10 data.
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -70,85 +74,91 @@ y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
 # Start model definition.
+# Densenet CNNs (composite function) are made of BN-ReLU-Conv2D
+# For ImageNet, DenseNet uses strides = 2. Cifar10 uses strides = 1.
 inputs = Input(shape=input_shape)
-x = Conv2D(num_filters,
+x = BatchNormalization()(inputs)
+x = Activation('relu')(x)
+x = Conv2D(num_filters_bef_dense_block,
            kernel_size=7,
            padding='same',
-           strides=2,
            kernel_initializer='he_normal',
-           kernel_regularizer=l2(1e-4))(inputs)
-x = BatchNormalization()(x)
-x = Activation('relu')(x)
+           strides=1)(x)
 
-# Orig paper uses max pool after 1st conv.
-# Reaches up 87% acc if use_max_pool = True.
-# Cifar10 images are already too small at 32x32 to be maxpooled. So, we skip.
+# For ImageNet, DenseNet uses max pool after 1st conv.
+# For Cifar10, no maxpooling. So, we skip.
 if use_max_pool:
     x = MaxPooling2D(pool_size=3, strides=2, padding='same')(x)
-    num_blocks = 3
 
-# Instantiate convolutional base (stack of blocks).
-for i in range(num_blocks):
-    for j in range(num_sub_blocks):
-        strides = 1
-        is_first_layer_but_not_first_block = j == 0 and i > 0
-        if is_first_layer_but_not_first_block:
-            strides = 2
-        y = Conv2D(num_filters,
-                   kernel_size=3,
+# Stack of Dense Blocks bridged by Transition Layers.
+for i in range(num_dense_blocks):
+    # A Dense Block is a stack of Bottleneck Layers
+    for j in range(num_bottleneck_layers):
+        y = BatchNormalization()(x)
+        y = Activation('relu')(y)
+        y = Conv2D(4 * growth_rate,
+                   kernel_size=1,
                    padding='same',
-                   strides=strides,
-                   kernel_initializer='he_normal',
-                   kernel_regularizer=l2(1e-4))(x)
+                   kernel_initializer='he_normal')(y)
+        if not data_augmentation:
+            y = Dropout(0.2)(y)
         y = BatchNormalization()(y)
         y = Activation('relu')(y)
-        y = Conv2D(num_filters,
+        y = Conv2D(growth_rate,
                    kernel_size=3,
                    padding='same',
-                   kernel_initializer='he_normal',
-                   kernel_regularizer=l2(1e-4))(y)
-        y = BatchNormalization()(y)
-        if is_first_layer_but_not_first_block:
-            x = Conv2D(num_filters,
-                       kernel_size=1,
-                       padding='same',
-                       strides=2,
-                       kernel_initializer='he_normal',
-                       kernel_regularizer=l2(1e-4))(x)
-        x = keras.layers.add([x, y])
-        x = Activation('relu')(x)
+                   kernel_initializer='he_normal')(y)
+        if not data_augmentation:
+            y = Dropout(0.2)(y)
+        x = keras.layers.concatenate([x, y])
 
-    num_filters = 2 * num_filters
+    # No transition layer after the last Dense Block
+    if i == num_dense_blocks - 1:
+        continue
+
+    # Transition Layer compresses the number of feature maps and reduces the size by 2.
+    num_filters_bef_dense_block += num_bottleneck_layers * growth_rate
+    num_filters_bef_dense_block = int(num_filters_bef_dense_block * compression_factor)
+    y = BatchNormalization()(x)
+    y = Conv2D(num_filters_bef_dense_block,
+               kernel_size=1,
+               padding='same',
+               kernel_initializer='he_normal')(y)
+    if not data_augmentation:
+        y = Dropout(0.2)(y)
+    x = MaxPooling2D()(y)
+
 
 # Add classifier on top.
-x = AveragePooling2D()(x)
+# After average pooling, size of feature map is 1 x 1.
+x = AveragePooling2D(pool_size=7)(x)
 y = Flatten()(x)
-outputs = Dense(num_classes,
-                activation='softmax',
-                kernel_initializer='he_normal')(y)
+outputs = Dense(num_classes, kernel_initializer='he_normal',
+                activation='softmax')(y)
 
 # Instantiate and compile model.
+# Orig paper uses SGD but RMSprop works better for DenseNet
 model = Model(inputs=inputs, outputs=outputs)
 model.compile(loss='categorical_crossentropy',
-              optimizer=Adam(),
+              optimizer=RMSprop(1e-3),
               metrics=['accuracy'])
 model.summary()
 
 # Prepare model model saving directory.
 save_dir = os.path.join(os.getcwd(), 'saved_models')
-model_name = 'cifar10_resnet_model.h5'
+model_name = 'cifar10_densenet_model.{epoch:02d}.h5'
 if not os.path.isdir(save_dir):
     os.makedirs(save_dir)
 filepath = os.path.join(save_dir, model_name)
 
-# Prepare callbacks for model saving and for learning rate decaying.
+# Prepare callbacks for model saving and for learning rate reducer.
 checkpoint = ModelCheckpoint(filepath=filepath,
                              verbose=1,
-                             save_best_only=True)
-lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+                             save_best_only=False)
+lr_reducer = ReduceLROnPlateau(factor=0.5,
                                cooldown=0,
-                               patience=5,
-                               min_lr=0.5e-6)
+                               patience=20,
+                               min_lr=1e-6)
 callbacks = [checkpoint, lr_reducer]
 
 # Run training, with or without data augmentation.
