@@ -12,9 +12,9 @@ https://arxiv.org/pdf/1603.05027.pdf
 from __future__ import print_function
 import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import MaxPooling2D, AveragePooling2D, Input, Flatten
-from keras.optimizers import Adam, RMSprop, SGD
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler
+from keras.layers import AveragePooling2D, Input, Flatten
+from keras.optimizers import Adam 
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
 from keras import backend as K
@@ -25,21 +25,21 @@ import os
 
 # Training params.
 batch_size = 32
-epochs = 200
+epochs = 180
 data_augmentation = True
 
-#           |      |           | Orig Paper|           |
-# Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | sec/epoch
-#           |      | %Accuracy | %Accuracy | %Accuracy | (GTX 1080Ti
-# ResNet20  |  3   | 92.2      | 91.25     |           | 58
-# ResNet32  |  5   | 92.2      | 92.49     |           | 96
-# ResNet44  |  7   | 91.07     | 92.83     |           | 128
-# ResNet56  |  9   | 89.1      | 93.03     |           | 163
-# ResNet110 |  18  |           | 93.39     | 
-n = 7
+#           |      |           | Orig Paper|           | Orig Paper|
+# Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | sec/epoch
+#           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | (GTX 1080Ti
+# ResNet20  |  3   | 91.95     | 91.25     | 92.57     | -         | 58
+# ResNet32  |  5   | 92.00     | 92.49     | 92.22     | -         | 96
+# ResNet44  |  7   | 91.07     | 92.83     | 91.02     | -         | 128
+# ResNet56  |  9   | 90.25     | 93.03     | 91.37     | -         | 163
+# ResNet110 |  18  | 90.23     | 93.39     | 91.22     | 93.63     | 330 
+n = 18
 
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
-version = 2
+version = 1
 
 # Subtracting pixel mean improves accuracy
 use_pix_mean = True
@@ -53,12 +53,14 @@ num_sub_blocks = 2 * n
 # Learning rate scheduler - called every epoch as part of callbacks
 def lr_schedule(epoch):
     lr = 1e-3
-    if epoch > 160:
-        lr = 1e-6
-    elif epoch > 120:
-        lr = 1e-5
-    elif epoch > 80:
+    if n == 18:
         lr = 1e-4
+    if epoch > 160:
+        lr *= 1e-3
+    elif epoch > 120:
+        lr *= 1e-2
+    elif epoch > 80:
+        lr *= 1e-1
     print("Learning rate: ", lr)
     return lr
 
