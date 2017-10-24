@@ -114,8 +114,7 @@ for i in range(num_dense_blocks):
 
     # Transition Layer compresses num of feature maps and reduces the size by 2
     num_filters_bef_dense_block += num_bottleneck_layers * growth_rate
-    num_filters_bef_dense_block = 
-            int(num_filters_bef_dense_block * compression_factor)
+    num_filters_bef_dense_block = int(num_filters_bef_dense_block * compression_factor)
     y = BatchNormalization()(x)
     y = Conv2D(num_filters_bef_dense_block,
                kernel_size=1,
