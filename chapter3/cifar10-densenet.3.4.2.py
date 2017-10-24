@@ -22,6 +22,7 @@ from keras import backend as K
 from keras.models import Model
 from keras.datasets import cifar10
 import os
+import numpy as np
 
 # Training params.
 batch_size = 32
@@ -148,7 +149,7 @@ filepath = os.path.join(save_dir, model_name)
 # Prepare callbacks for model saving and for learning rate reducer.
 checkpoint = ModelCheckpoint(filepath=filepath,
                              verbose=1,
-                             save_best_only=False)
+                             save_best_only=True)
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                cooldown=0,
                                patience=5,

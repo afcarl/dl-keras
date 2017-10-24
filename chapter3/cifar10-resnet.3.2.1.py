@@ -36,7 +36,7 @@ data_augmentation = True
 # ResNet44  |  7   | 91.07     | 92.83     | 91.02     | -         | 128
 # ResNet56  |  9   | 90.25     | 93.03     | 91.37     | -         | 163
 # ResNet110 |  18  | 90.23     | 93.39     | 91.22     | 93.63     | 330 
-n = 18
+n = 3
 
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
 version = 1
