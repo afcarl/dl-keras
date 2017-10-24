@@ -14,7 +14,8 @@ Network below is similar to 100-Layer DenseNet-BC (k=12)
 from __future__ import print_function
 import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import MaxPooling2D, AveragePooling2D, Input, Flatten, Dropout
+from keras.layers import MaxPooling2D, AveragePooling2D
+from keras.layers import Input, Flatten, Dropout
 from keras.optimizers import RMSprop
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from keras.preprocessing.image import ImageDataGenerator
@@ -111,9 +112,10 @@ for i in range(num_dense_blocks):
     if i == num_dense_blocks - 1:
         continue
 
-    # Transition Layer compresses the number of feature maps and reduces the size by 2.
+    # Transition Layer compresses num of feature maps and reduces the size by 2
     num_filters_bef_dense_block += num_bottleneck_layers * growth_rate
-    num_filters_bef_dense_block = int(num_filters_bef_dense_block * compression_factor)
+    num_filters_bef_dense_block = 
+            int(num_filters_bef_dense_block * compression_factor)
     y = BatchNormalization()(x)
     y = Conv2D(num_filters_bef_dense_block,
                kernel_size=1,
@@ -171,12 +173,12 @@ else:
     datagen = ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
-        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        featurewise_std_normalization=False,  # divide inputs by std of dataset
         samplewise_std_normalization=False,  # divide each input by its std
         zca_whitening=False,  # apply ZCA whitening
-        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
-        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
-        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        rotation_range=0,  # randomly rotate images in the range (deg 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally
+        height_shift_range=0.1,  # randomly shift images vertically
         horizontal_flip=True,  # randomly flip images
         vertical_flip=False)  # randomly flip images
 

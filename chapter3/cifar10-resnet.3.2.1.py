@@ -13,7 +13,7 @@ from __future__ import print_function
 import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
 from keras.layers import AveragePooling2D, Input, Flatten
-from keras.optimizers import Adam 
+from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
@@ -30,12 +30,12 @@ data_augmentation = True
 
 #           |      |           | Orig Paper|           | Orig Paper|
 # Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | sec/epoch
-#           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | (GTX 1080Ti
+#           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | GTX 1080Ti
 # ResNet20  |  3   | 91.95     | 91.25     | 92.57     | -         | 58
 # ResNet32  |  5   | 92.00     | 92.49     | 92.22     | -         | 96
 # ResNet44  |  7   | 91.07     | 92.83     | 91.02     | -         | 128
 # ResNet56  |  9   | 90.25     | 93.03     | 91.37     | -         | 163
-# ResNet110 |  18  | 90.23     | 93.39     | 91.22     | 93.63     | 330 
+# ResNet110 |  18  | 90.23     | 93.39     | 91.22     | 93.63     | 330
 n = 3
 
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
@@ -49,6 +49,7 @@ num_classes = 10
 num_filters = 16
 num_blocks = 3
 num_sub_blocks = 2 * n
+
 
 # Learning rate scheduler - called every epoch as part of callbacks
 def lr_schedule(epoch):
@@ -93,7 +94,7 @@ x_train = x_train.astype('float32') / 255
 x_test = x_test.astype('float32') / 255
 
 if use_pix_mean:
-    x_train_mean = np.mean(x_train,axis=0)
+    x_train_mean = np.mean(x_train, axis=0)
     x_train -= x_train_mean
     x_test -= x_train_mean
 
@@ -203,12 +204,12 @@ else:
     datagen = ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
-        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        featurewise_std_normalization=False,  # divide inputs by std of dataset
         samplewise_std_normalization=False,  # divide each input by its std
         zca_whitening=False,  # apply ZCA whitening
-        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
-        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
-        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        rotation_range=0,  # randomly rotate images in the range (deg 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally
+        height_shift_range=0.1,  # randomly shift images vertically
         horizontal_flip=True,  # randomly flip images
         vertical_flip=False)  # randomly flip images
 
