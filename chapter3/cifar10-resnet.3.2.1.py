@@ -32,13 +32,14 @@ num_classes=10
 #           |      |           | Orig Paper|           | Orig Paper|
 # Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | sec/epoch
 #           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | GTX 1080Ti
-# ResNet20  |  3   | 91.95     | 91.25     | -----     | -         | 58
+# ResNet20  |  3   | 91.95     | 91.25     | -----     | -         | 58 (35)
 # ResNet32  |  5   | 92.00     | 92.49     | -----     | -         | 96
 # ResNet44  |  7   | 91.07     | 92.83     | -----     | -         | 128
 # ResNet56  |  9   | 90.25     | 93.03     | 92.46     | -         | 163 (100)
 # ResNet110 |  18  | 90.23     | 93.39     | 92.46     | 93.63     | 330 (180)
 n = 3
 depth = n * 6 + 2
+model_type = 'ResNet%d ' % depth
 
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
 version = 1
@@ -71,20 +72,13 @@ else:
     input_shape = (img_rows, img_cols, channels)
 
 # Normalize data.
-# x_train = x_train.astype('float32') / 255
-# x_test = x_test.astype('float32') / 255
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
+x_train = x_train.astype('float32') / 255
+x_test = x_test.astype('float32') / 255
 
 if subtract_mean_pixel:
     x_train_mean = np.mean(x_train, axis=0)
     x_train -= x_train_mean
     x_test -= x_train_mean
-    x_train /= 128.
-    x_test /= 128.
-    # x_train_mean = np.mean(x_train, axis=0)
-    # x_train -= x_train_mean
-    # x_test -= x_train_mean
 
 print('x_train shape:', x_train.shape)
 print(x_train.shape[0], 'train samples')
@@ -280,22 +274,22 @@ def resnet_v2_bottleneck(input_shape, depth, num_classes=10):
     model = Model(inputs=inputs, outputs=outputs)
     return model
     
-
 if version == 2:
     model = resnet_v2_bottleneck(input_shape=input_shape, depth=depth)
-    print('ResNet%d v2 with bottleneck layers' % depth)
+    model_type += 'v2 with bottleneck layers'
 else:
     if depth > 44:
         model = resnet_v1_bottleneck(input_shape=input_shape, depth=depth)
-        print('ResNet%d v1' % depth)
+        model_type += 'v1 with bottleneck layers'
     else:
         model = resnet_v1(input_shape=input_shape, depth=depth)
-        print('ResNet%d v1 with bottleneck layers' % depth)
+        model_type += 'v1'
 
 model.compile(loss='categorical_crossentropy',
               optimizer=Adam(lr=lr_schedule(0)),
               metrics=['accuracy'])
 model.summary()
+print(model_type)
 
 # Prepare model model saving directory.
 save_dir = os.path.join(os.getcwd(), 'saved_models')
