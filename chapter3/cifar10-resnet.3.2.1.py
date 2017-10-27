@@ -96,7 +96,7 @@ y_test = keras.utils.to_categorical(y_test, num_classes)
 def lr_schedule(epoch):
     """Learning Rate Schedule
 
-    Learning rate is scheduled to be reduced at 80, 120, 160 epochs.
+    Learning rate is scheduled to be reduced after 80, 120, 160 epochs.
     Called automatically every epoch as part of callbacks during training.
 
     # Arguments
@@ -118,7 +118,7 @@ def lr_schedule(epoch):
 
 def conv_bn(inputs, num_filters=16, kernel_size=3, strides=1):
     """2D Convolution-Batch Normalization stack builder function
-        
+
     # Arguments
         inputs (tensor): input tensor from input image or previous layer
         num_filters (int): Conv2D number of filters
@@ -184,7 +184,7 @@ def bn_relu_conv(inputs, num_filters=16, kernel_size=3, strides=1):
 def resnet_v1(input_shape, depth, num_classes=10):
     """ResNet Version 1 Model builder [a]
 
-    Stacks of 2 x (3 x 3) Conv2D-BN-ReLU 
+    Stacks of 2 x (3 x 3) Conv2D-BN-ReLU
     Last ReLU is after the shortcut connection.
     The number of filters doubles when the feature maps size
     is halved.
@@ -197,7 +197,7 @@ def resnet_v1(input_shape, depth, num_classes=10):
 
     # Arguments
         input_shape (tensor): shape of input image tensor
-        depth (int): number of core convolutional layers 
+        depth (int): number of core convolutional layers
         num_classes (int): number of classes (CIFAR10 has 10)
 
     # Returns
@@ -257,7 +257,7 @@ def resnet_v2(input_shape, depth, num_classes=10):
 
     # Arguments
         input_shape (tensor): shape of input image tensor
-        depth (int): number of core convolutional layers 
+        depth (int): number of core convolutional layers
         num_classes (int): number of classes (CIFAR10 has 10)
 
     # Returns
