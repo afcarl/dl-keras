@@ -188,6 +188,12 @@ def resnet_v1(input_shape, depth, num_classes=10):
     Last ReLU is after the shortcut connection.
     The number of filters doubles when the feature maps size
     is halved.
+    The Number of parameters is approx the same as Table 6 of [a]:
+    ResNet20 0.27M
+    ResNet32 0.46M
+    ResNet44 0.66M
+    ResNet56 0.85M
+    ResNet110 1.7M
 
     # Arguments
         input_shape (tensor): shape of input image tensor
@@ -226,6 +232,7 @@ def resnet_v1(input_shape, depth, num_classes=10):
         num_filters = 2 * num_filters
 
     # Add classifier on top.
+    # v1 does not use BN after last shortcut connection-ReLU
     x = AveragePooling2D(pool_size=8)(x)
     y = Flatten()(x)
     outputs = Dense(num_classes,
