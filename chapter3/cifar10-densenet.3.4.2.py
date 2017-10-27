@@ -149,6 +149,7 @@ filepath = os.path.join(save_dir, model_name)
 
 # Prepare callbacks for model saving and for learning rate reducer.
 checkpoint = ModelCheckpoint(filepath=filepath,
+                             monitor='val_acc',
                              verbose=1,
                              save_best_only=True)
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
