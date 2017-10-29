@@ -24,29 +24,38 @@ from keras.datasets import cifar10
 import numpy as np
 import os
 
-# Training params.
+# Training parameters
 batch_size = 32
 epochs = 200
 data_augmentation = True
 num_classes = 10
 
-#           |      |           | Orig Paper|           | Orig Paper| sec/epoch
-# Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | GTX1090Ti
-#           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | v1 (v2)
-# ResNet20  |  3   | 92.16     | 91.25     | -----     | NA        | 35
-# ResNet32  |  5   | -----     | 92.49     | -----     | NA        | --
-# ResNet44  |  7   | -----     | 92.83     | -----     | NA        | --
-# ResNet56  |  9   | -----     | 93.03     | 92.46     | NA        | 87 (100)
-# ResNet110 |  18  | -----     | 93.39     | 92.46     | 93.63     | 180
-n = 9
-depth = n * 6 + 2
-
-# Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
-version = 1
-model_type = 'ResNet%d v%d' % (depth, version)
-
 # Subtracting pixel mean improves accuracy
 subtract_pixel_mean = True
+
+# Model parameter
+# ----------------------------------------------------------------------------
+#           |      | 200 epochs| Orig Paper| 200 epochs| Orig Paper| sec/epoch
+# Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | GTX1090Ti
+#           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | v1 (v2)
+# ----------------------------------------------------------------------------
+# ResNet20  |  3   | 92.16     | 91.25     | -----     | NA        | 35
+# ResNet32  |  5   | 92.46     | 92.49     | -----     | NA        | 50
+# ResNet44  |  7   | 92.50     | 92.83     | -----     | NA        | 70
+# ResNet56  |  9   | 92.71     | 93.03     | 92.60     | NA        | 90 (100)
+# ResNet110 |  18  | 92.50     | 93.39     | 93.03     | 93.63     | 160(180)
+# ---------------------------------------------------------------------------
+n = 18
+
+# Model version
+# Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
+version = 1
+
+# Computed depth from supplied model parameter n
+depth = n * 6 + 2
+
+# Model name, depth and version
+model_type = 'ResNet%d v%d' % (depth, version)
 
 # Load the CIFAR10 data.
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -92,21 +101,22 @@ y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
 
-# Learning rate scheduler - called every epoch as part of callbacks
 def lr_schedule(epoch):
     """Learning Rate Schedule
 
-    Learning rate is scheduled to be reduced after 80, 120, 160 epochs.
+    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
     Called automatically every epoch as part of callbacks during training.
 
     # Arguments
         epoch (int): The number of epochs
 
     # Returns
-        float32: learning rate
+        lr (float32): learning rate
     """
     lr = 1e-3
-    if epoch > 160:
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
         lr *= 1e-3
     elif epoch > 120:
         lr *= 1e-2
@@ -117,7 +127,7 @@ def lr_schedule(epoch):
 
 
 def conv_bn(inputs, num_filters=16, kernel_size=3, strides=1):
-    """2D Convolution-Batch Normalization stack builder function
+    """2D Convolution-Batch Normalization stack builder
 
     # Arguments
         inputs (tensor): input tensor from input image or previous layer
@@ -126,7 +136,7 @@ def conv_bn(inputs, num_filters=16, kernel_size=3, strides=1):
         strides (int): Conv2D square stride dimensions
 
     # Returns
-        tensor: tensor as input to the next layer
+        x (tensor): tensor as input to the next layer
     """
     x = Conv2D(num_filters,
                kernel_size=kernel_size,
@@ -139,7 +149,7 @@ def conv_bn(inputs, num_filters=16, kernel_size=3, strides=1):
 
 
 def conv_bn_relu(inputs, num_filters=16, kernel_size=3, strides=1):
-    """2D Convolution-Batch Normalization-ReLU stack builder function
+    """2D Convolution-Batch Normalization-ReLU stack builder
 
     # Arguments
         inputs (tensor): input tensor from input image or previous layer
@@ -148,7 +158,7 @@ def conv_bn_relu(inputs, num_filters=16, kernel_size=3, strides=1):
         strides (int): Conv2D square stride dimensions
 
     # Returns
-        tensor: tensor as input to the next layer
+        x (tensor): tensor as input to the next layer
     """
     x = conv_bn(inputs=inputs,
                 num_filters=num_filters,
@@ -159,7 +169,7 @@ def conv_bn_relu(inputs, num_filters=16, kernel_size=3, strides=1):
 
 
 def bn_relu_conv(inputs, num_filters=16, kernel_size=3, strides=1):
-    """Batch Normalization-ReLU-2D Convolution stack builder function
+    """Batch Normalization-ReLU-2D Convolution stack builder
 
     # Arguments
         inputs (tensor): input tensor from input image or previous layer
@@ -168,7 +178,7 @@ def bn_relu_conv(inputs, num_filters=16, kernel_size=3, strides=1):
         strides (int): Conv2D square stride dimensions
 
     # Returns
-        tensor: tensor as input to the next layer
+        x (tensor): tensor as input to the next layer
     """
     x = BatchNormalization()(inputs)
     x = Activation('relu')(x)
