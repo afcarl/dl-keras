@@ -35,7 +35,7 @@ subtract_pixel_mean = True
 
 # Model parameter
 # ----------------------------------------------------------------------------
-#           |      | 200 epochs| Orig Paper| 200 epochs| Orig Paper| sec/epoch
+#           |      | 200-epoch | Orig Paper| 200-epoch | Orig Paper| sec/epoch
 # Model     |  n   | ResNet v1 | ResNet v1 | ResNet v2 | ResNet v2 | GTX1090Ti
 #           |      | %Accuracy | %Accuracy | %Accuracy | %Accuracy | v1 (v2)
 # ----------------------------------------------------------------------------
@@ -43,9 +43,9 @@ subtract_pixel_mean = True
 # ResNet32  |  5   | 92.46     | 92.49     | -----     | NA        | 50
 # ResNet44  |  7   | 92.50     | 92.83     | -----     | NA        | 70
 # ResNet56  |  9   | 92.71     | 93.03     | 92.60     | NA        | 90 (100)
-# ResNet110 |  18  | 92.50     | 93.39     | 93.03     | 93.63     | 160(180)
+# ResNet110 |  18  | 92.65     | 93.39     | 93.03     | 93.63     | 165(180)
 # ---------------------------------------------------------------------------
-n = 18
+n = 3
 
 # Model version
 # Orig paper: version = 1 (ResNet v1), Improved ResNet: version = 2 (ResNet v2)
