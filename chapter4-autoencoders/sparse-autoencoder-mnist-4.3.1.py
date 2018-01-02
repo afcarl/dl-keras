@@ -12,12 +12,17 @@ from keras.layers import Conv2D, MaxPooling2D, Flatten
 from keras.layers import Reshape, Conv2DTranspose, UpSampling2D
 from keras.models import Model
 from keras.datasets import mnist
+from keras.utils import to_categorical
 from keras.utils import plot_model
 import math
 import matplotlib.pyplot as plt
 
 # MNIST dataset
-(x_train, _), (x_test, _) = mnist.load_data()
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+num_labels = np.amax(y_train) + 1
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
 
 image_size = x_train.shape[1]
 x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
@@ -83,22 +88,41 @@ decoder = Model(latent_inputs, outputs, name='decoder')
 decoder.summary()
 plot_model(decoder, to_file='decoder.png', show_shapes=True)
 
-# Autoencoder = Encoder + Decoder
+# Classifier Model
+latent_inputs = Input(shape=(latent_dim,), name='classifier_input')
+x = Dense(512)(latent_inputs)
+x = Activation('relu')(x)
+x = Dropout(0.4)(x)
+x = Dense(256)(x)
+x = Activation('relu')(x)
+x = Dropout(0.4)(x)
+x = Dense(num_labels)(x)
+classifier_outputs = Activation('softmax', name='classifier_output')(x)
+classifier = Model(latent_inputs, classifier_outputs, name='classifier')
+classifier.summary()
+plot_model(classifier, to_file='classifier.png', show_shapes=True)
+
+# Sparse Autoencoder = Encoder + Classifier/Decoder
 # Instantiate Autoencoder model
-autoencoder = Model(inputs, decoder(encoder(inputs)), name='autodecoder')
+autoencoder = Model(inputs,
+                    [classifier(encoder(inputs)), decoder(encoder(inputs))],
+                    name='autodecoder')
 autoencoder.summary()
-plot_model(autoencoder, to_file='autoencoder.png', show_shapes=True)
+plot_model(autoencoder, to_file='sparse_autoencoder.png', show_shapes=True)
 
 # Mean Square Error (MSE) loss function, Adam optimizer
-autoencoder.compile(loss='mse', optimizer='adam')
+autoencoder.compile(loss=['categorical_crossentropy', 'mse'],
+                    optimizer='adam',
+                    metrics=['accuracy', 'mse'])
 
 # Train the autoencoder for 1 epoch
-autoencoder.fit(x_train, x_train,
-                validation_data=(x_test, x_test),
-                epochs=1, batch_size=batch_size)
+autoencoder.fit(x_train, [y_train, x_train], 
+          validation_data=(x_test, [y_test, x_test]),
+          epochs=2, batch_size=batch_size)
 
 # Predict the Autoencoder output from test data
-x_decoded = autoencoder.predict(x_test)
+y_predicted, x_decoded = autoencoder.predict(x_test)
+print(np.argmax(y_predicted[:8], axis=1))
 
 # Display the 1st 8 input and decoded images
 imgs = np.concatenate([x_test[:8], x_decoded[:8]])
