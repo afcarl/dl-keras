@@ -1,8 +1,8 @@
 """Trains a 100-Layer DenseNet on the CIFAR10 dataset.
 
 With data augmentation:
-Greater than 93.5% test accuracy in 100 epochs
-10min per epoch on GTX 1080Ti
+Greater than 93.74% test accuracy in 200 epochs
+225sec per epoch on GTX 1080Ti
 
 Densely Connected Convolutional Networks
 https://arxiv.org/pdf/1608.06993.pdf
@@ -18,6 +18,7 @@ from keras.layers import MaxPooling2D, AveragePooling2D
 from keras.layers import Input, Flatten, Dropout
 from keras.optimizers import RMSprop
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import LearningRateScheduler
 from keras.preprocessing.image import ImageDataGenerator
 from keras import backend as K
 from keras.models import Model
@@ -27,13 +28,13 @@ import numpy as np
 
 # Training params.
 batch_size = 32
-epochs = 100
+epochs = 200
 data_augmentation = True
 
 # Network architecture params.
 num_classes = 10
 num_dense_blocks = 3
-num_bottleneck_layers = 32
+num_bottleneck_layers = 16
 use_max_pool = False
 growth_rate = 12
 num_filters_bef_dense_block = 2 * growth_rate
@@ -75,14 +76,38 @@ print('y_train shape:', y_train.shape)
 y_train = keras.utils.to_categorical(y_train, num_classes)
 y_test = keras.utils.to_categorical(y_test, num_classes)
 
+def lr_schedule(epoch):
+    """Learning Rate Schedule
+
+    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+    Called automatically every epoch as part of callbacks during training.
+
+    # Arguments
+        epoch (int): The number of epochs
+
+    # Returns
+        lr (float32): learning rate
+    """
+    lr = 1e-3
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
+        lr *= 1e-3
+    elif epoch > 120:
+        lr *= 1e-2
+    elif epoch > 80:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+    return lr
+
+
 # Start model definition.
 # Densenet CNNs (composite function) are made of BN-ReLU-Conv2D
-# For ImageNet, DenseNet uses strides = 2. Cifar10 uses strides = 1.
 inputs = Input(shape=input_shape)
 x = BatchNormalization()(inputs)
 x = Activation('relu')(x)
 x = Conv2D(num_filters_bef_dense_block,
-           kernel_size=7,
+           kernel_size=3,
            padding='same',
            kernel_initializer='he_normal')(x)
 
@@ -127,7 +152,7 @@ for i in range(num_dense_blocks):
 
 # Add classifier on top.
 # After average pooling, size of feature map is 1 x 1.
-x = AveragePooling2D(pool_size=7)(x)
+x = AveragePooling2D(pool_size=8)(x)
 y = Flatten()(x)
 outputs = Dense(num_classes, kernel_initializer='he_normal',
                 activation='softmax')(y)
@@ -152,11 +177,15 @@ checkpoint = ModelCheckpoint(filepath=filepath,
                              monitor='val_acc',
                              verbose=1,
                              save_best_only=True)
+
+lr_scheduler = LearningRateScheduler(lr_schedule)
+
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                cooldown=0,
                                patience=5,
                                min_lr=0.5e-6)
-callbacks = [checkpoint, lr_reducer]
+
+callbacks = [checkpoint, lr_reducer, lr_scheduler]
 
 # Run training, with or without data augmentation.
 if not data_augmentation:
