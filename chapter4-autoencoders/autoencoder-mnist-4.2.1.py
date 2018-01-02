@@ -30,30 +30,14 @@ batch_size = 128
 kernel_size = 3
 pool_size = 2
 dropout = 0.4
-n_filters = 16
+filters = 16
 latent_dim = 16
-
-# utility function for combining several images into
-# matrix of images for easy visualization
-def combine_images(generated_images):
-    num = generated_images.shape[0]
-    width = int(math.sqrt(num))
-    height = int(math.ceil(float(num)/width))
-    shape = generated_images.shape[1:3]
-    image = np.zeros((height*shape[0], width*shape[1]),
-                     dtype=generated_images.dtype)
-    for index, img in enumerate(generated_images):
-        i = int(index/width)
-        j = index % width
-        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = img[:, :, 0]
-    return image
 
 # Build the Autoencoder model
 # First build the Encoder model
 inputs = Input(shape=input_shape, name='encoder_input')
 x = inputs
-filters = n_filters
-# stacks of BN-ReLU-Conv2D-MaxPooling
+# Stack of BN-ReLU-Conv2D-MaxPooling blocks
 for i in range(2):
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
@@ -62,23 +46,24 @@ for i in range(2):
                padding='same')(x)
     x = MaxPooling2D()(x)
 
-# shape info needed to create decoder model
+# Shape info needed to build decoder model
 shape = x.shape.as_list()
 
-# create a 16-dim latent vector
+# Generate a 16-dim latent vector
 x = Flatten()(x)
 latent = Dense(latent_dim, name='latent_vector')(x)
 
-# instatiate encoder model
+# Instantiate Encoder model
 encoder = Model(inputs, latent, name='encoder')
 encoder.summary()
+plot_model(encoder, to_file='encoder.png', show_shapes=True)
 
 # Build the Decoder model
 latent_inputs = Input(shape=(latent_dim,), name='decoder_input')
 x = Dense(shape[1]*shape[2]*shape[3])(latent_inputs)
 x = Reshape((shape[1], shape[2], shape[3]))(x)
 
-# stacks of BN-ReLU-Transposed Conv2D-UpSampling
+# Stack of BN-ReLU-Transposed Conv2D-UpSampling blocks
 for i in range(2):
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
@@ -92,30 +77,34 @@ x = Conv2DTranspose(filters=1, kernel_size=kernel_size,
 
 outputs = Activation('sigmoid', name='decoder_output')(x)
 
-# instantiate decoder model
+# Instantiate Decoder model
 decoder = Model(latent_inputs, outputs, name='decoder')
 decoder.summary()
+plot_model(decoder, to_file='decoder.png', show_shapes=True)
 
-# autoencoder = encoder + decoder
-# instantiate autoencoder model
-autoencoder = Model(inputs, decoder(encoder(inputs)), name='decoder')
+# Autoencoder = Encoder + Decoder
+# Instantiate Autoencoder model
+autoencoder = Model(inputs, decoder(encoder(inputs)), name='autodecoder')
 autoencoder.summary()
 plot_model(autoencoder, to_file='autoencoder.png', show_shapes=True)
 
-# MSE loss function, Adam optimizer
+# Mean Square Error (MSE) loss function, Adam optimizer
 autoencoder.compile(loss='mse', optimizer='adam')
+
+# Train the autoencoder for 1 epoch
 autoencoder.fit(x_train, x_train,
                 validation_data=(x_test, x_test),
                 epochs=1, batch_size=batch_size)
 
-# predict the autoencoder output fr test data
-x_dec = autoencoder.predict(x_test)
+# Predict the Autoencoder output from test data
+x_decoded = autoencoder.predict(x_test)
 
-# combine input and decoded images then plot
-img = combine_images(np.concatenate([x_test[:8], x_dec[:8]]))
-image = img * 255
-image = image.astype(np.uint8)
-image = Image.fromarray(image)
-image.save("input_and_decoded.png")
-image.show()
-
+# Display the 1st 8 input and decoded images
+imgs = np.concatenate([x_test[:8], x_decoded[:8]])
+imgs = imgs.reshape((4, 4, image_size, image_size))
+imgs = np.vstack([np.hstack(i) for i in imgs])
+plt.figure()
+plt.axis('off')
+plt.title('Input: 1st 2 rows, Decoded: last 2 rows')
+plt.imshow(imgs, interpolation='none', cmap='gray')
+plt.savefig('input_and_decoded.png')
