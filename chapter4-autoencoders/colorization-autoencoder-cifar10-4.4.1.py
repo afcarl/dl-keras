@@ -7,7 +7,7 @@ Usage: python3 <this file>
 
 import numpy as np
 import keras
-from keras.layers import Activation, Dense, Dropout, Input, BatchNormalization
+from keras.layers import Activation, Dense, Input, BatchNormalization
 from keras.layers import Conv2D, MaxPooling2D, Flatten
 from keras.layers import Reshape, Conv2DTranspose, UpSampling2D
 from keras.models import Model
@@ -77,7 +77,6 @@ input_shape = (img_rows, img_cols, 1)
 batch_size = 128
 kernel_size = 3
 pool_size = 2
-dropout = 0.2
 filters = 32
 latent_dim = 256
 
@@ -97,7 +96,7 @@ for i in range(3):
 # Shape info needed to build decoder model
 shape = x.shape.as_list()
 
-# Generate a 16-dim latent vector
+# Generate a latent vector
 x = Flatten()(x)
 latent = Dense(latent_dim, name='latent_vector')(x)
 
@@ -138,7 +137,7 @@ save_dir = os.path.join(os.getcwd(), 'saved_models')
 model_name = 'colorized_ae_model.{epoch:03d}.h5'
 if not os.path.isdir(save_dir):
         os.makedirs(save_dir)
-        filepath = os.path.join(save_dir, model_name)
+filepath = os.path.join(save_dir, model_name)
 
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                cooldown=0,
@@ -154,7 +153,7 @@ autoencoder.compile(loss='mse', optimizer='adam')
 
 callbacks = [lr_reducer, checkpoint]
 
-# Train the autoencoder for 1 epoch
+# Train the autoencoder for 100 epochs
 autoencoder.fit(x_train_gray, x_train,
                 validation_data=(x_test_gray, x_test),
                 epochs=100, batch_size=batch_size,
