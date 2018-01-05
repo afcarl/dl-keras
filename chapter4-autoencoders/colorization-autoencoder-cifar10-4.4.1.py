@@ -1,4 +1,8 @@
-'''
+'''Colorization autoencoder
+
+The autoencoder is trained with grayscale images as input
+and colored images as output. 
+
 Author: Rowel Atienza
 Project: https://github.com/roatienza/dl-keras
 Dependencies: keras with tensorflow backend
@@ -8,12 +12,13 @@ Usage: python3 <this file>
 import numpy as np
 import keras
 from keras.layers import Activation, Dense, Input, BatchNormalization
-from keras.layers import Conv2D, MaxPooling2D, Flatten
-from keras.layers import Reshape, Conv2DTranspose, UpSampling2D
+from keras.layers import Conv2D, Flatten
+from keras.layers import Reshape, Conv2DTranspose
 from keras.models import Model
 from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from keras.datasets import cifar10
 from keras.utils import plot_model
+from keras import backend as K
 import matplotlib.pyplot as plt
 import os
 
@@ -76,49 +81,49 @@ x_test_gray = x_test_gray.reshape(x_test_gray.shape[0], img_rows, img_cols, 1)
 input_shape = (img_rows, img_cols, 1)
 batch_size = 128
 kernel_size = 3
-pool_size = 2
 filters = 32
 latent_dim = 256
 
-# Build the Autoencoder model
-# First build the Encoder model
+# Build the Autoencoder Model
+# First build the Encoder Model
 inputs = Input(shape=input_shape, name='encoder_input')
 x = inputs
-# Stack of BN-ReLU-Conv2D blocks
+# Stack of Conv2D blocks
 for i in range(3):
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
     filters = filters * 2
-    x = Conv2D(filters=filters, kernel_size=kernel_size,
+    x = Conv2D(filters=filters,
+               kernel_size=kernel_size,
                strides=2,
+               activation='relu',
                padding='same')(x)
 
-# Shape info needed to build decoder model
-shape = x.shape.as_list()
+# Shape info needed to build Decoder Model
+shape = K.int_shape(x)
 
 # Generate a latent vector
 x = Flatten()(x)
 latent = Dense(latent_dim, name='latent_vector')(x)
 
-# Instantiate Encoder model
+# Instantiate Encoder Model
 encoder = Model(inputs, latent, name='encoder')
 encoder.summary()
 
-# Build the Decoder model
+# Build the Decoder Model
 latent_inputs = Input(shape=(latent_dim,), name='decoder_input')
 x = Dense(shape[1]*shape[2]*shape[3])(latent_inputs)
 x = Reshape((shape[1], shape[2], shape[3]))(x)
 
-# Stack of BN-ReLU-Transposed Conv2D blocks
+# Stack of Transposed Conv2D blocks
 for i in range(3):
-    x = BatchNormalization()(x)
-    x = Activation('relu')(x)
-    x = Conv2DTranspose(filters=filters, kernel_size=kernel_size,
+    x = Conv2DTranspose(filters=filters,
+                        kernel_size=kernel_size,
                         strides=2,
+                        activation='relu',
                         padding='same')(x)
-    filters = int(filters / 2)
+    filters //= 2
 
-x = Conv2DTranspose(filters=channels, kernel_size=kernel_size,
+x = Conv2DTranspose(filters=channels,
+                    kernel_size=kernel_size,
                     padding='same')(x)
 
 outputs = Activation('sigmoid', name='decoder_output')(x)
@@ -128,8 +133,8 @@ decoder = Model(latent_inputs, outputs, name='decoder')
 decoder.summary()
 
 # Autoencoder = Encoder + Decoder
-# Instantiate Autoencoder model
-autoencoder = Model(inputs, decoder(encoder(inputs)), name='autodecoder')
+# Instantiate Autoencoder Model
+autoencoder = Model(inputs, decoder(encoder(inputs)), name='autoencoder')
 autoencoder.summary()
 
 # Prepare model model saving directory.
@@ -154,9 +159,11 @@ autoencoder.compile(loss='mse', optimizer='adam')
 callbacks = [lr_reducer, checkpoint]
 
 # Train the autoencoder for 100 epochs
-autoencoder.fit(x_train_gray, x_train,
+autoencoder.fit(x_train_gray,
+                x_train,
                 validation_data=(x_test_gray, x_test),
-                epochs=100, batch_size=batch_size,
+                epochs=50,
+                batch_size=batch_size,
                 callbacks=callbacks)
 
 # Predict the Autoencoder output from test data
