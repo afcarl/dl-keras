@@ -11,7 +11,7 @@ Usage: python3 <this file>
 
 import numpy as np
 import keras
-from keras.layers import Activation, Dense, Input, BatchNormalization
+from keras.layers import Activation, Dense, Input
 from keras.layers import Conv2D, Flatten
 from keras.layers import Reshape, Conv2DTranspose
 from keras.models import Model
@@ -147,6 +147,7 @@ filepath = os.path.join(save_dir, model_name)
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
                                cooldown=0,
                                patience=5,
+                               verbose=1,
                                min_lr=0.5e-6)
 checkpoint = ModelCheckpoint(filepath=filepath,
                              monitor='val_loss',
@@ -158,7 +159,7 @@ autoencoder.compile(loss='mse', optimizer='adam')
 
 callbacks = [lr_reducer, checkpoint]
 
-# Train the autoencoder for 100 epochs
+# Train the autoencoder
 autoencoder.fit(x_train_gray,
                 x_train,
                 validation_data=(x_test_gray, x_test),
