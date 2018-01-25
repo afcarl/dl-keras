@@ -1,4 +1,4 @@
-'''Trains a denoising autoenconder on MNIST dataset.
+'''Trains a denoising autoencoder on MNIST dataset.
 
 Denoising is one of the classic applications of autoencoders.
 The denoising process removes unwanted noise that corrupted the
@@ -28,6 +28,9 @@ from keras import backend as K
 from keras.datasets import mnist
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
+
+np.random.seed(1337)
 
 # MNIST dataset
 (x_train, _), (x_test, _) = mnist.load_data()
@@ -52,8 +55,9 @@ x_test_noisy = np.clip(x_test_noisy, 0., 1.)
 input_shape = (image_size, image_size, 1)
 batch_size = 128
 kernel_size = 3
-filters = 16
 latent_dim = 16
+# Encoder/Decoder number of CNN layers and filters per layer
+layer_filters = [32, 64]
 
 # Build the Autoencoder Model
 # First build the Encoder Model
@@ -64,8 +68,7 @@ x = inputs
 # 1) Use Batch Normalization before ReLU on deep networks
 # 2) Use MaxPooling2D as alternative to strides>1
 # - faster but not as good as strides>1
-for i in range(2):
-    filters *= 2
+for filters in layer_filters:
     x = Conv2D(filters=filters,
                kernel_size=kernel_size,
                strides=2,
@@ -93,13 +96,12 @@ x = Reshape((shape[1], shape[2], shape[3]))(x)
 # 1) Use Batch Normalization before ReLU on deep networks
 # 2) Use UpSampling2D as alternative to strides>1
 # - faster but not as good as strides>1
-for i in range(2):
+for filters in layer_filters[::-1]:
     x = Conv2DTranspose(filters=filters,
                         kernel_size=kernel_size,
                         strides=2,
                         activation='relu',
                         padding='same')(x)
-    filters //= 2
 
 x = Conv2DTranspose(filters=1,
                     kernel_size=kernel_size,
@@ -116,26 +118,32 @@ decoder.summary()
 autoencoder = Model(inputs, decoder(encoder(inputs)), name='autoencoder')
 autoencoder.summary()
 
-# Mean Square Error (MSE) loss function, Adam optimizer
 autoencoder.compile(loss='mse', optimizer='adam')
 
 # Train the autoencoder
 autoencoder.fit(x_train_noisy,
                 x_train,
                 validation_data=(x_test_noisy, x_test),
-                epochs=10,
+                epochs=30,
                 batch_size=batch_size)
 
 # Predict the Autoencoder output from corrupted test images
 x_decoded = autoencoder.predict(x_test_noisy)
 
 # Display the 1st 8 corrupted and denoised images
-imgs = np.concatenate([x_test_noisy[:8], x_decoded[:8]])
-imgs = imgs.reshape((4, 4, image_size, image_size))
+rows, cols = 10, 30
+num = rows * cols
+imgs = np.concatenate([x_test[:num], x_test_noisy[:num], x_decoded[:num]])
+imgs = imgs.reshape((rows * 3, cols, image_size, image_size))
+imgs = np.vstack(np.split(imgs, rows, axis=1))
+imgs = imgs.reshape((rows * 3, -1, image_size, image_size))
 imgs = np.vstack([np.hstack(i) for i in imgs])
+imgs = (imgs * 255).astype(np.uint8)
 plt.figure()
 plt.axis('off')
-plt.title('Corrupted Input: top 2 rows, Output is Denoised Input: last 2 rows')
+plt.title('Original images: top rows, '
+          'Corrupted Input: middle rows, '
+          'Denoised Input:  third rows')
 plt.imshow(imgs, interpolation='none', cmap='gray')
-plt.savefig('corrupted_and_denoised.png')
+Image.fromarray(imgs).save('corrupted_and_denoised.png')
 plt.show()
