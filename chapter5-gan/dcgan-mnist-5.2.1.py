@@ -84,7 +84,7 @@ def discriminator(inputs):
         Model: Discriminator Model
     """
     kernel_size = 5
-    layer_filters = [16, 32, 64, 128]
+    layer_filters = [32, 64, 128, 256]
 
     x = inputs
     for filters in layer_filters:
@@ -107,8 +107,8 @@ def discriminator(inputs):
 
 def train(models,
           x_train,
-          batch_size=128,
-          train_steps=5000,
+          batch_size=256,
+          train_steps=10000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
 
@@ -137,7 +137,7 @@ def train(models,
         fake_images = generator.predict(noise)
         x = np.concatenate((train_images, fake_images))
         # Label real and fake images
-        y = np.ones([2*batch_size, 1])
+        y = np.ones([2 * batch_size, 1])
         y[batch_size:, :] = 0
         # Train the Discriminator network
         metrics = discriminator.train_on_batch(x, y)
@@ -153,17 +153,17 @@ def train(models,
         metrics = adversarial.train_on_batch(noise, y)
         loss = metrics[0]
         accuracy = metrics[1]
-        log = "%s  [adversarial loss: %f, acc: %f]" % (log, loss, accuracy)
+        log = "%s [adversarial loss: %f, acc: %f]" % (log, loss, accuracy)
         print(log)
-        if (i+1) % save_interval == 0:
-            if (i+1) == train_steps:
+        if (i + 1) % save_interval == 0:
+            if (i + 1) == train_steps:
                 show = True
             else:
                 show = False
             plot_images(generator,
                         noise_input=noise_input,
                         show=show,
-                        step=(i+1))
+                        step=(i + 1))
 
 
 def plot_images(generator,
@@ -184,12 +184,12 @@ def plot_images(generator,
     """
     filename = "mnist_dcgan_%d.png" % step
     images = generator.predict(noise_input)
-    plt.figure(figsize=(6, 6))
+    plt.figure(figsize=(2.4, 2.4))
     num_images = images.shape[0]
     image_size = images.shape[1]
     rows = int(math.sqrt(noise_input.shape[0]))
     for i in range(num_images):
-        plt.subplot(rows, rows, i+1)
+        plt.subplot(rows, rows, i + 1)
         image = images[i, :, :, :]
         image = np.reshape(image, [image_size, image_size])
         plt.imshow(image, cmap='gray')
