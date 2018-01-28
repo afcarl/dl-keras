@@ -24,7 +24,7 @@ from keras.layers import Conv2D, Flatten
 from keras.layers import Reshape, Conv2DTranspose
 from keras.layers import LeakyReLU
 from keras.layers import BatchNormalization
-from keras.optimizers import RMSprop, Adam
+from keras.optimizers import RMSprop
 from keras.models import Model
 from keras.datasets import mnist
 import numpy as np
@@ -48,7 +48,7 @@ def generator(inputs, image_size):
     """
     image_resize = image_size // 4
     kernel_size = 5
-    layer_filters = [256, 128, 64, 1]
+    layer_filters = [128, 64, 32, 1]
 
     x = Dense(image_resize * image_resize * layer_filters[0])(inputs)
     x = Reshape((image_resize, image_resize, layer_filters[0]))(x)
@@ -107,7 +107,7 @@ def discriminator(inputs):
 
 def train(models,
           x_train,
-          batch_size=256,
+          batch_size=128,
           train_steps=10000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
@@ -146,9 +146,9 @@ def train(models,
         log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
 
         # Generate fake images
-        noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
+        noise = np.random.uniform(-1.0, 1.0, size=[2 * batch_size, latent_size])
         # Label fake images as real
-        y = np.ones([batch_size, 1])
+        y = np.ones([2 * batch_size, 1])
         # Train the Adversarial network
         metrics = adversarial.train_on_batch(noise, y)
         loss = metrics[0]
@@ -217,7 +217,6 @@ inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs)
 # [1] uses Adam, but discriminator converges easily with RMSprop
 optimizer = RMSprop(lr=0.0002)
-# optimizer = Adam(lr=0.0002, beta_1=0.5)
 discriminator.compile(loss='binary_crossentropy',
                       optimizer=optimizer,
                       metrics=['accuracy'])
@@ -231,7 +230,6 @@ generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
 optimizer = RMSprop(lr=0.0001)
-# optimizer = Adam(lr=0.0001, beta_1=0.5)
 adversarial = Model(inputs, discriminator(generator(inputs)), name='dcgan')
 adversarial.compile(loss='binary_crossentropy',
                     optimizer=optimizer,

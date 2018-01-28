@@ -120,7 +120,7 @@ def train(models,
           x_train,
           y_train,
           num_labels=10,
-          batch_size=256,
+          batch_size=258,
           train_steps=10000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
@@ -208,9 +208,9 @@ def plot_images(generator,
         step (int): Appended to filename of the save images
 
     """
-    filename = "mnist_dcgan_%d.png" % step
+    filename = "mnist_cgan_%d.png" % step
     images = generator.predict([noise_input, noise_class])
-    print(np.argmax(noise_class))
+    print("Labels: ", np.argmax(noise_class, axis=1))
     plt.figure(figsize=(2.4, 2.4))
     num_images = images.shape[0]
     image_size = images.shape[1]
@@ -249,7 +249,7 @@ y_labels = Input(shape=label_shape, name='class_labels')
 
 discriminator = discriminator(inputs, y_labels, image_size)
 # [1] uses Adam, but discriminator converges easily with RMSprop
-optimizer = RMSprop(lr=0.0001)
+optimizer = RMSprop(lr=0.0002)
 discriminator.compile(loss='binary_crossentropy',
                       optimizer=optimizer,
                       metrics=['accuracy'])
@@ -273,4 +273,4 @@ adversarial.summary()
 
 # Train Discriminator and Adversarial Networks
 models = (generator, discriminator, adversarial)
-train(models, x_train, y_train, latent_size=latent_size)
+train(models, x_train, y_train, num_labels=num_labels, latent_size=latent_size)
