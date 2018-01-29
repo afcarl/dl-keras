@@ -1,17 +1,14 @@
-'''Trains DCGAN on MNIST using Keras
+'''Trains CGAN on MNIST using Keras
 
-DCGAN is a Generative Adversarial Network (GAN) using CNN.
-The generator tries to fool the discriminator by generating fake images.
-The discriminator learns to discriminate real from fake images.
-The generator + discriminator form an adversarial network.
-DCGAN trains the discriminator and adversarial networks alternately.
-During training, not only the discriminator learns to distinguish real from
-fake images, it also coaches the generator part of the adversarial on how
-to improve its ability to generate fake images.
+CGAN is Conditional Generative Adversarial Nets.
+This version is CGAN is similar to DCGAN. The difference mainly 
+is that the z-vector of geneerator is conditioned by a one-hot label 
+to producespecific fake images. The discriminator is trained to 
+discriminate real from fake images that are conditioned on 
+specific one-hot labels.
 
-[1] Radford, Alec, Luke Metz, and Soumith Chintala.
-"Unsupervised representation learning with deep convolutional
-generative adversarial networks." arXiv preprint arXiv:1511.06434 (2015).
+[1] Mirza, Mehdi, and Simon Osindero. "Conditional generative
+adversarial nets." arXiv preprint arXiv:1411.1784 (2014).
 '''
 
 from __future__ import absolute_import
@@ -37,12 +34,15 @@ import matplotlib.pyplot as plt
 def generator(inputs, y_labels, image_size):
     """Build a Generator Model
 
+    Inputs are concatenated after Dense layer.
     Stacks of BN-ReLU-Conv2DTranpose to generate fake images
-    Output activation is sigmoid instead of tanh in [1].
+    Output activation is sigmoid instead of tanh in orig DCGAN.
     Sigmoid converges easily.
 
     # Arguments
         inputs (Layer): Input layer of the generator (the z-vector)
+        y_labels (Layer): Input layer for one-hot vector to condition
+            the inputs
         image_size: Target size of one side (assuming square image)
 
     # Returns
@@ -79,12 +79,16 @@ def generator(inputs, y_labels, image_size):
 def discriminator(inputs, y_labels, image_size):
     """Build a Discriminator Model
 
+    Inputs are concatenated after Dense layer.
     Stacks of LeakyReLU-Conv2D to discriminate real from fake
     The network does not converge with BN so it is not used here
-    unlike in [1]
+    unlike in DCGAN paper.
 
     # Arguments
         inputs (Layer): Input layer of the discriminator (the image)
+        y_labels (Layer): Input layer for one-hot vector to condition
+            the inputs
+        image_size: Target size of one side (assuming square image)
 
     # Returns
         Model: Discriminator Model
@@ -145,11 +149,11 @@ def train(models,
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     noise_class = np.eye(num_labels)[np.random.choice(num_labels, 16)]
     for i in range(train_steps):
-        # Pick random real images
+        # Pick random real images and their labels
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
         train_images = x_train[rand_indexes, :, :, :]
         train_labels = y_train[rand_indexes, :]
-        # Generate fake images
+        # Generate fake images and their labels
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         noise_labels = np.eye(num_labels)[np.random.choice(num_labels, batch_size)]
 
@@ -167,7 +171,7 @@ def train(models,
         accuracy = metrics[1]
         log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
 
-        # Generate fake images
+        # Generate fake images and their labels
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         noise_labels = np.eye(num_labels)[np.random.choice(num_labels, batch_size)]
         # Label fake images as real
