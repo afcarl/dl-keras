@@ -107,8 +107,8 @@ def discriminator(inputs):
 
 def train(models,
           x_train,
-          batch_size=256,
-          train_steps=10000,
+          batch_size=128,
+          train_steps=20000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
 
