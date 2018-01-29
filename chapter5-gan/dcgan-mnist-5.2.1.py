@@ -107,8 +107,8 @@ def discriminator(inputs):
 
 def train(models,
           x_train,
-          batch_size=128,
-          train_steps=20000,
+          batch_size=256,
+          train_steps=10000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
 
@@ -216,7 +216,7 @@ input_shape = (image_size, image_size, 1)
 inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs)
 # [1] uses Adam, but discriminator converges easily with RMSprop
-optimizer = RMSprop(lr=0.0002)
+optimizer = RMSprop(lr=0.0002, decay=6e-8)
 discriminator.compile(loss='binary_crossentropy',
                       optimizer=optimizer,
                       metrics=['accuracy'])
@@ -229,7 +229,7 @@ generator = generator(inputs, image_size)
 generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
-optimizer = RMSprop(lr=0.0001)
+optimizer = RMSprop(lr=0.0001, decay=3e-8)
 adversarial = Model(inputs, discriminator(generator(inputs)), name='dcgan')
 adversarial.compile(loss='binary_crossentropy',
                     optimizer=optimizer,
