@@ -55,8 +55,8 @@ def generator(inputs, y_labels, image_size):
     x = Dense(image_resize * image_resize * layer_filters[0])(inputs)
     x = Reshape((image_resize, image_resize, layer_filters[0]))(x)
 
-    y = Dense(image_resize * image_resize * layer_filters[0])(y_labels)
-    y = Reshape((image_resize, image_resize, layer_filters[0]))(y)
+    y = Dense(image_resize * image_resize * 16)(y_labels)
+    y = Reshape((image_resize, image_resize, 16))(y)
     x = keras.layers.concatenate([x, y])
 
     for filters in layer_filters:
@@ -120,8 +120,8 @@ def train(models,
           x_train,
           y_train,
           num_labels=10,
-          batch_size=258,
-          train_steps=10000,
+          batch_size=128,
+          train_steps=20000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
 

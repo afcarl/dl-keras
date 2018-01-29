@@ -107,7 +107,7 @@ def discriminator(inputs):
 
 def train(models,
           x_train,
-          batch_size=128,
+          batch_size=256,
           train_steps=10000,
           latent_size=100):
     """Train the Discriminator and Adversarial Networks
@@ -146,9 +146,9 @@ def train(models,
         log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
 
         # Generate fake images
-        noise = np.random.uniform(-1.0, 1.0, size=[2 * batch_size, latent_size])
+        noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         # Label fake images as real
-        y = np.ones([2 * batch_size, 1])
+        y = np.ones([batch_size, 1])
         # Train the Adversarial network
         metrics = adversarial.train_on_batch(noise, y)
         loss = metrics[0]
