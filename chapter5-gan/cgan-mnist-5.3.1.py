@@ -1,10 +1,10 @@
 '''Trains CGAN on MNIST using Keras
 
 CGAN is Conditional Generative Adversarial Nets.
-This version is CGAN is similar to DCGAN. The difference mainly 
-is that the z-vector of geneerator is conditioned by a one-hot label 
-to producespecific fake images. The discriminator is trained to 
-discriminate real from fake images that are conditioned on 
+This version of CGAN is similar to DCGAN. The difference mainly
+is that the z-vector of geneerator is conditioned by a one-hot label
+to produce specific fake images. The discriminator is trained to
+discriminate real from fake images that are conditioned on
 specific one-hot labels.
 
 [1] Mirza, Mehdi, and Simon Osindero. "Conditional generative
@@ -132,6 +132,9 @@ def train(models,
     Alternately train Discriminator and Adversarial networks by batch
     Discriminator is trained first with properly real and fake images
     Adversarial is trained next with fake images pretending to be real
+    Discriminator inputs are conditioned by train labels for real images,
+    and random labels for fake images
+    Adversarial inputs are conditioned by random labels
     Generate sample images per save_interval
 
     # Arguments
@@ -155,7 +158,8 @@ def train(models,
         train_labels = y_train[rand_indexes, :]
         # Generate fake images and their labels
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
-        noise_labels = np.eye(num_labels)[np.random.choice(num_labels, batch_size)]
+        noise_labels = np.eye(num_labels)[np.random.choice(num_labels,
+                                                           batch_size)]
 
         fake_images = generator.predict([noise, noise_labels])
         x = np.concatenate((train_images, fake_images))
@@ -173,7 +177,8 @@ def train(models,
 
         # Generate fake images and their labels
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
-        noise_labels = np.eye(num_labels)[np.random.choice(num_labels, batch_size)]
+        noise_labels = np.eye(num_labels)[np.random.choice(num_labels,
+                                                           batch_size)]
         # Label fake images as real
         y = np.ones([batch_size, 1])
         # Train the Adversarial network
@@ -201,7 +206,7 @@ def plot_images(generator,
                 step=0):
     """Generate fake images and plot them
 
-    For visualization purposes, generate fake images
+    For visualization purposes, generate fake images given labels
     then plot them in a square grid
 
     # Arguments
