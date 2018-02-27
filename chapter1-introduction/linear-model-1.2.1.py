@@ -11,7 +11,6 @@ from __future__ import print_function
 
 # numpy package
 import numpy as np
-# import numpy.linalg as la
 
 # keras modules
 from keras.models import Sequential
@@ -23,7 +22,7 @@ x = np.arange(-1,1,0.2)
 x = np.reshape(x, [-1,1])
 
 # generate y data
-y = 2*x + 3
+y = 2 * x + 3
 
 # True if noise is added to y
 is_noisy = False
@@ -58,9 +57,9 @@ ones = np.ones(x.shape)
 # A is the concat of x and 1s
 A = np.concatenate([x,ones], axis=1)
 # compute k using using pseudo-inverse
-k = np.matmul(np.linalg.pinv(A),y) 
+k = np.matmul(np.linalg.pinv(A), y) 
 # predict the output using linear algebra solution
-yla = np.matmul(A,k)
+yla = np.matmul(A, k)
 
 # print ground truth, linear algebra, MLP solutions
 outputs = np.concatenate([y, yla, ypred], axis=1)
