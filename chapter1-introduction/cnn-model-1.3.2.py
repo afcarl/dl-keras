@@ -1,5 +1,5 @@
 '''
-A CNN network for classification
+A sample CNN network for classification
 
 Project: https://github.com/roatienza/dl-keras
 Dependencies: keras 

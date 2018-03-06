@@ -1,14 +1,20 @@
 '''
-Author: Rowel Atienza
+Utility for plotting a 2nd deg polynomial and
+its derivative
+
 Project: https://github.com/roatienza/dl-keras
 Dependency: keras 2.0
 Usage: python3 <this file>
 '''
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import matplotlib.pyplot as plt
-#import numpy.polynomial.polynomial as poly
 
+plt.style.use('grayscale')
 x = np.arange(-1, 2, 0.1)
 c = [1, -1, -1]
 d = [2, -1]

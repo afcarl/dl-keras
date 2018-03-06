@@ -15,6 +15,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout
 from keras.datasets import mnist
 from keras.utils import to_categorical
+from keras.utils import plot_model
 
 # load mnist dataset
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -52,6 +53,7 @@ model.add(Dense(num_labels))
 # this is the output for one-hot vector
 model.add(Activation('softmax'))
 model.summary()
+plot_model(model, to_file='mlp-mnist.png', show_shapes=True)
 
 # loss function for one-hot vector
 # use of adam optimizer

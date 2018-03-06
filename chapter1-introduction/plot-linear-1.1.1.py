@@ -1,5 +1,5 @@
 '''
-A python script for plotting a linear function
+Utility for plotting a linear function
 with and without noise
 
 Project: https://github.com/roatienza/dl-keras
@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 want_noise = False
-# grayscale plot, uncomment if color is wanted
+# grayscale plot, comment if color is wanted
 plt.style.use('grayscale')
 
 # generate data bet -1,1 interval of 0.2
