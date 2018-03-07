@@ -154,7 +154,8 @@ for i in range(num_dense_blocks):
 # After average pooling, size of feature map is 1 x 1.
 x = AveragePooling2D(pool_size=8)(x)
 y = Flatten()(x)
-outputs = Dense(num_classes, kernel_initializer='he_normal',
+outputs = Dense(num_classes,
+                kernel_initializer='he_normal',
                 activation='softmax')(y)
 
 # Instantiate and compile model.

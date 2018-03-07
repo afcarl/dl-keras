@@ -21,6 +21,7 @@ from keras.regularizers import l2
 from keras import backend as K
 from keras.models import Model
 from keras.datasets import cifar10
+from keras.utils import plot_model
 import numpy as np
 import os
 
@@ -337,6 +338,7 @@ model.compile(loss='categorical_crossentropy',
               optimizer=Adam(lr=lr_schedule(0)),
               metrics=['accuracy'])
 model.summary()
+plot_model(model, to_file="%s.png" % model_type, show_shapes=True)
 print(model_type)
 
 # Prepare model model saving directory.

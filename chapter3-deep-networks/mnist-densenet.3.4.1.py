@@ -1,4 +1,4 @@
-"""Trains a 100-Layer DenseNet on the CIFAR10 dataset.
+"""Trains a simple DenseNet-type network on MNIST dataset.
 
 Densely Connected Convolutional Networks
 https://arxiv.org/pdf/1608.06993.pdf
@@ -25,7 +25,7 @@ epochs = 20
 
 # Network architecture params.
 num_classes = 10
-num_layers = 6
+num_layers = 4
 growth_rate = 12
 num_filters_bef_dense_block = 2 * growth_rate
 channels = 1
