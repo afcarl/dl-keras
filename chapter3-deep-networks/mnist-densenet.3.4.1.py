@@ -16,6 +16,7 @@ from keras import backend as K
 from keras.models import Model
 from keras.datasets import mnist
 from keras.utils import to_categorical
+from keras.utils import plot_model
 import os
 import numpy as np
 
@@ -25,7 +26,7 @@ epochs = 20
 
 # Network architecture params.
 num_classes = 10
-num_layers = 4
+num_layers = 6
 growth_rate = 12
 num_filters_bef_dense_block = 2 * growth_rate
 channels = 1
@@ -86,6 +87,7 @@ model.compile(loss='categorical_crossentropy',
               optimizer=RMSprop(1e-3),
               metrics=['accuracy'])
 model.summary()
+plot_model(model, to_file="mnist-densenet.png", show_shapes=True)
 
 # Prepare model model saving directory.
 save_dir = os.path.join(os.getcwd(), 'saved_models')
