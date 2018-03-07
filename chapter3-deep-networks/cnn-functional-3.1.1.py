@@ -1,5 +1,6 @@
 '''
-Author: Rowel Atienza
+Using Functional API to build CNN
+
 Project: https://github.com/roatienza/dl-keras
 Dependencies: keras 
 Usage: python3 <this file>
@@ -31,28 +32,36 @@ pool_size = 2
 filters = 64
 dropout = 0.3
 
+# Use Functional API to build CNN
 inputs = Input(shape=input_shape)
-y = Conv2D(filters=filters, kernel_size=kernel_size,
+y = Conv2D(filters=filters,
+           kernel_size=kernel_size,
            activation='relu')(inputs)
 y = MaxPooling2D()(y)
-y = Conv2D(filters=filters, kernel_size=kernel_size,
+y = Conv2D(filters=filters,
+           kernel_size=kernel_size,
            activation='relu')(y)
 y = MaxPooling2D()(y)
-y = Conv2D(filters=filters, kernel_size=kernel_size,
+y = Conv2D(filters=filters,
+           kernel_size=kernel_size,
            activation='relu')(y)
 y = Flatten()(y)
 y = Dropout(dropout)(y)
 y = Dense(num_labels)(y)
 outputs = Activation('softmax')(y)
 
+# Build the model by supplying inputs/outputs
 model = Model(inputs=inputs, outputs=outputs)
 model.summary()
 
 model.compile(loss='categorical_crossentropy',
-              optimizer='adam', metrics=['accuracy'])
-model.fit(x_train, y_train,
+              optimizer='adam',
+              metrics=['accuracy'])
+model.fit(x_train,
+          y_train,
           validation_data=(x_test, y_test),
-          epochs=20, batch_size=batch_size)
+          epochs=20,
+          batch_size=batch_size)
 
 score = model.evaluate(x_test, y_test, batch_size=batch_size)
 print("\nTest accuracy: %.1f%%" % (100.0 * score[1]))
