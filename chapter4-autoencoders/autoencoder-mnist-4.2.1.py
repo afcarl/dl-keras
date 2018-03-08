@@ -5,7 +5,6 @@ are 3 models that share weights. For example, after training the
 autoencoder, the encoder can be used to  generate latent vectors
 of input data for low-dim visualization like PCA or TSNE.
 
-Author: Rowel Atienza
 Project: https://github.com/roatienza/dl-keras
 Dependencies: keras with tensorflow backend
 Usage: python3 <this file>
