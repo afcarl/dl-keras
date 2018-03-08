@@ -31,6 +31,30 @@ growth_rate = 12
 num_filters_bef_dense_block = 2 * growth_rate
 channels = 1
 
+def lr_schedule(epoch):
+    """Learning Rate Schedule
+
+    Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+    Called automatically every epoch as part of callbacks during training.
+
+    # Arguments
+        epoch (int): The number of epochs
+
+    # Returns
+        lr (float32): learning rate
+    """
+    lr = 1e-3
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
+        lr *= 1e-3
+    elif epoch > 120:
+        lr *= 1e-2
+    elif epoch > 80:
+        lr *= 1e-1
+    print('Learning rate: ', lr)
+    return lr
+
 # Load the MNIST data.
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
@@ -98,9 +122,18 @@ filepath = os.path.join(save_dir, model_name)
 
 # Prepare callbacks for model saving and for learning rate reducer.
 checkpoint = ModelCheckpoint(filepath=filepath,
+                             monitor='val_acc',
                              verbose=1,
-                             save_best_only=False)
-callbacks = [checkpoint]
+                             save_best_only=True)
+
+lr_scheduler = LearningRateScheduler(lr_schedule)
+
+lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1),
+                               cooldown=0,
+                               patience=5,
+                               min_lr=0.5e-6)
+
+callbacks = [checkpoint, lr_reducer, lr_scheduler]
 
 model.fit(x_train, y_train,
           batch_size=batch_size,

@@ -1,7 +1,7 @@
 """Trains a 100-Layer DenseNet on the CIFAR10 dataset.
 
 With data augmentation:
-Greater than 93.74% test accuracy in 200 epochs
+Greater than 93.55% test accuracy in 200 epochs
 225sec per epoch on GTX 1080Ti
 
 Densely Connected Convolutional Networks
@@ -93,6 +93,7 @@ x = Conv2D(num_filters_bef_dense_block,
            kernel_size=3,
            padding='same',
            kernel_initializer='he_normal')(x)
+x = keras.layers.concatenate([inputs, x])
 
 # Stack of Dense Blocks bridged by Transition Layers.
 for i in range(num_dense_blocks):
