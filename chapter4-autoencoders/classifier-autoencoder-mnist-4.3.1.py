@@ -1,5 +1,4 @@
 '''
-Author: Rowel Atienza
 Project: https://github.com/roatienza/dl-keras
 Dependencies: keras with tensorflow backend
 Usage: python3 <this file>
