@@ -11,7 +11,8 @@ import keras
 from keras.layers import Dense, Conv2D, BatchNormalization, Activation
 from keras.layers import MaxPooling2D, AveragePooling2D, Input, Flatten, Dropout
 from keras.optimizers import RMSprop
-from keras.callbacks import ModelCheckpoint 
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import LearningRateScheduler
 from keras import backend as K
 from keras.models import Model
 from keras.datasets import mnist
@@ -22,7 +23,7 @@ import numpy as np
 
 # Training params.
 batch_size = 32
-epochs = 20
+epochs = 200
 
 # Network architecture params.
 num_classes = 10
@@ -88,6 +89,7 @@ x = Conv2D(num_filters_bef_dense_block,
            kernel_size=3,
            padding='same',
            kernel_initializer='he_normal')(x)
+x = keras.layers.concatenate([inputs, x])
 
 for i in range(num_layers):
     y = BatchNormalization()(x)
