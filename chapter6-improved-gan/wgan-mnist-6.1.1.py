@@ -1,6 +1,6 @@
 '''Trains WGAN on MNIST using Keras
 
-Arjovsky, Martin, Soumith Chintala, and Léon Bottou. 
+[a] Arjovsky, Martin, Soumith Chintala, and Léon Bottou. 
 "Wasserstein GAN." arXiv preprint arXiv:1701.07875 (2017).
 
 '''
@@ -114,25 +114,24 @@ def train(models, x_train, params):
     """
     generator, discriminator, adversarial = models
     batch_size, latent_size, n_critic, clip_value = params
-    half_batch = batch_size // 2
-    train_steps = 10000
-    save_interval = 500
+    train_steps = 40000
+    save_interval = 1000
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
         # train discriminator n_critic times
         for _ in range(n_critic):
             # Pick random real images
-            rand_indexes = np.random.randint(0, x_train.shape[0], size=half_batch)
+            rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
             real_images = x_train[rand_indexes, :, :, :]
             # Generate fake images
-            noise = np.random.uniform(-1.0, 1.0, size=[half_batch, latent_size])
+            noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
             fake_images = generator.predict(noise)
 
             # Train the Discriminator network
             real_loss, real_acc = discriminator.train_on_batch(real_images,
-                                                        -np.ones((half_batch, 1)))
+                                                        -np.ones((batch_size, 1)))
             fake_loss, fake_acc = discriminator.train_on_batch(fake_images,
-                                                        np.ones((half_batch, 1)))
+                                                        np.ones((batch_size, 1)))
             # print("metrics real ", metrics_real)
             loss = 0.5 * np.add(fake_loss, real_loss)
             acc = 0.5 * np.add(fake_acc, real_acc)
@@ -187,7 +186,7 @@ def plot_images(generator,
         step (int): Appended to filename of the save images
 
     """
-    filename = "mnist_dcgan_%d.png" % step
+    filename = "mnist_wgan_%d.png" % step
     images = generator.predict(noise_input)
     plt.figure(figsize=(2.4, 2.4))
     num_images = images.shape[0]
@@ -206,10 +205,12 @@ def plot_images(generator,
         plt.close('all')
 
 
+# The latent or z vector is 100-dim
+latent_size = 100
+# Network parameters from [a]
 n_critic = 5
 clip_value = 0.01
-latent_size = 100
-batch_size = 128
+batch_size = 64
 lr = 0.00005
 
 # MNIST dataset
@@ -219,7 +220,6 @@ image_size = x_train.shape[1]
 x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
 x_train = x_train.astype('float32') / 255
 
-# The latent or z vector is 100-dim
 input_shape = (image_size, image_size, 1)
 
 # Build Discriminator Model
