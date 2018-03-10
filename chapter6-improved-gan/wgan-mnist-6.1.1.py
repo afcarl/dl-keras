@@ -133,7 +133,7 @@ def train(models, x_train, params):
                                                         -np.ones((half_batch, 1)))
             fake_loss, fake_acc = discriminator.train_on_batch(fake_images,
                                                         np.ones((half_batch, 1)))
-            # print("metrics real shape", metrics_real)
+            # print("metrics real ", metrics_real)
             loss = 0.5 * np.add(fake_loss, real_loss)
             acc = 0.5 * np.add(fake_acc, real_acc)
             # metrics = K.mean(metrics_real, metrics_fake)
@@ -241,6 +241,7 @@ generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
 optimizer = RMSprop(lr=lr)
+discriminator.trainable = False
 adversarial = Model(inputs, discriminator(generator(inputs)), name='wgan')
 adversarial.compile(loss=wgan_loss,
                     optimizer=optimizer,
