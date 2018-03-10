@@ -18,7 +18,6 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
-from keras import backend as K
 from keras.models import Model
 from keras.datasets import cifar10
 from keras.utils import plot_model
