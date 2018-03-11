@@ -119,6 +119,7 @@ def train(models, x_train, params):
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
         # train discriminator n_critic times
+        loss = 0
         for _ in range(n_critic):
             # Pick random real images
             rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
@@ -128,18 +129,11 @@ def train(models, x_train, params):
             fake_images = generator.predict(noise)
 
             # Train the Discriminator network
-            real_loss, real_acc = discriminator.train_on_batch(real_images,
+            real_loss, _ = discriminator.train_on_batch(real_images,
                                                         -np.ones((batch_size, 1)))
-            fake_loss, fake_acc = discriminator.train_on_batch(fake_images,
+            fake_loss, _ = discriminator.train_on_batch(fake_images,
                                                         np.ones((batch_size, 1)))
-            # print("metrics real ", metrics_real)
-            loss = 0.5 * np.add(fake_loss, real_loss)
-            acc = 0.5 * np.add(fake_acc, real_acc)
-            # metrics = K.mean(metrics_real, metrics_fake)
-
-            # loss = metrics[0]
-            # accuracy = metrics[1]
-            log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, acc)
+            loss += 0.5 * np.add(fake_loss, real_loss)
 
             # Clip discriminator weights
             for layer in discriminator.layers:
@@ -147,15 +141,14 @@ def train(models, x_train, params):
                 weights = [np.clip(weight, -clip_value, clip_value) for weight in weights]
                 layer.set_weights(weights)
 
+        log = "%d: [discriminator loss: %f]" % (i, loss/n_critic)
         # Generate fake images
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         # Label fake images as real
         y = -np.ones([batch_size, 1])
         # Train the Adversarial network
-        metrics = adversarial.train_on_batch(noise, y)
-        loss = metrics[0]
-        accuracy = metrics[1]
-        log = "%s [adversarial loss: %f, acc: %f]" % (log, loss, accuracy)
+        loss, _ = adversarial.train_on_batch(noise, y)
+        log = "%s [adversarial loss: %f]" % (log, loss)
         print(log)
         if (i + 1) % save_interval == 0:
             if (i + 1) == train_steps:
