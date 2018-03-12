@@ -114,8 +114,7 @@ def train(models, x_train, params):
 
     """
     generator, discriminator, adversarial = models
-    batch_size, latent_size = params
-    train_steps = 10000
+    batch_size, latent_size, train_steps = params
     save_interval = 500
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
@@ -172,7 +171,7 @@ def plot_images(generator,
         step (int): Appended to filename of the save images
 
     """
-    filename = "mnist_dcgan_%d.png" % step
+    filename = "mnist_lsgan_%d.png" % step
     images = generator.predict(noise_input)
     plt.figure(figsize=(2.4, 2.4))
     num_images = images.shape[0]
@@ -198,17 +197,21 @@ image_size = x_train.shape[1]
 x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
 x_train = x_train.astype('float32') / 255
 
+# Network parameters
 # The latent or z vector is 100-dim
 latent_size = 100
 input_shape = (image_size, image_size, 1)
-batch_size = 256
+batch_size = 64
 lr = 0.0002
+decay = 6e-8
+train_steps = 40000
 
 # Build Discriminator Model
 inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs)
 # [1] uses Adam, but discriminator converges easily with RMSprop
-optimizer = RMSprop(lr=lr, decay=6e-8)
+optimizer = RMSprop(lr=lr, decay=decay)
+# LSGAN uses MSE loss
 discriminator.compile(loss='mse',
                       optimizer=optimizer,
                       metrics=['accuracy'])
@@ -221,8 +224,10 @@ generator = generator(inputs, image_size)
 generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
-optimizer = RMSprop(lr=lr*0.5, decay=3e-8)
+optimizer = RMSprop(lr=lr*0.5, decay=decay*0.5)
+discriminator.trainable = False
 adversarial = Model(inputs, discriminator(generator(inputs)), name='lsgan')
+# LSGAN uses MSE loss
 adversarial.compile(loss='mse',
                     optimizer=optimizer,
                     metrics=['accuracy'])
@@ -230,5 +235,5 @@ adversarial.summary()
 
 # Train Discriminator and Adversarial Networks
 models = (generator, discriminator, adversarial)
-params = (batch_size, latent_size)
+params = (batch_size, latent_size, train_steps)
 train(models, x_train, params)

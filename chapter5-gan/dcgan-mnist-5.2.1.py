@@ -105,11 +105,7 @@ def discriminator(inputs):
     return discriminator
 
 
-def train(models,
-          x_train,
-          batch_size=256,
-          train_steps=10000,
-          latent_size=100):
+def train(models, x_train, params):
     """Train the Discriminator and Adversarial Networks
 
     Alternately train Discriminator and Adversarial networks by batch
@@ -120,13 +116,12 @@ def train(models,
     # Arguments
         models (list): Generator, Discriminator, Adversarial models
         x_train (tensor): Train images
-        batch_size (int): Batch size in train_on_batch
-        train_steps (int): Number of steps of training
-        latent_size (int): The z-vector dim
+        params (list) : Networks parameters
 
     """
     generator, discriminator, adversarial = models
-    save_interval = 500
+    batch_size, latent_size, train_steps = params
+    save_interval = 1000
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
         # Pick random real images
@@ -210,13 +205,17 @@ x_train = x_train.astype('float32') / 255
 
 # The latent or z vector is 100-dim
 latent_size = 100
+batch_size = 64
+train_steps = 40000
+lr = 0.0002
+decay = 6e-8
 input_shape = (image_size, image_size, 1)
 
 # Build Discriminator Model
 inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs)
 # [1] uses Adam, but discriminator converges easily with RMSprop
-optimizer = RMSprop(lr=0.0002, decay=6e-8)
+optimizer = RMSprop(lr=lr, decay=decay)
 discriminator.compile(loss='binary_crossentropy',
                       optimizer=optimizer,
                       metrics=['accuracy'])
@@ -229,7 +228,8 @@ generator = generator(inputs, image_size)
 generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
-optimizer = RMSprop(lr=0.0001, decay=3e-8)
+optimizer = RMSprop(lr=lr*0.5, decay=decay*0.5)
+discriminator.trainable = False
 adversarial = Model(inputs, discriminator(generator(inputs)), name='dcgan')
 adversarial.compile(loss='binary_crossentropy',
                     optimizer=optimizer,
@@ -238,4 +238,5 @@ adversarial.summary()
 
 # Train Discriminator and Adversarial Networks
 models = (generator, discriminator, adversarial)
-train(models, x_train, latent_size=latent_size)
+params = (batch_size, latent_size, train_steps)
+train(models, x_train, params)
