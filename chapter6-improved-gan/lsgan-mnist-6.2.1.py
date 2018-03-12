@@ -1,12 +1,11 @@
-'''Trains WGAN on MNIST using Keras
-
+'''Trains LSGAN on MNIST using Keras
+  
 [1] Radford, Alec, Luke Metz, and Soumith Chintala.
 "Unsupervised representation learning with deep convolutional
 generative adversarial networks." arXiv preprint arXiv:1511.06434 (2015).
 
-[2] Arjovsky, Martin, Soumith Chintala, and Léon Bottou. 
-"Wasserstein GAN." arXiv preprint arXiv:1701.07875 (2017).
-
+[2] Mao, Xudong, et al. "Least squares generative adversarial networks." 
+2017 IEEE International Conference on Computer Vision (ICCV). IEEE, 2017.
 '''
 
 from __future__ import absolute_import
@@ -22,7 +21,6 @@ from keras.layers import BatchNormalization
 from keras.optimizers import RMSprop
 from keras.models import Model
 from keras.datasets import mnist
-from keras import backend as K
 import numpy as np
 import math
 import matplotlib.pyplot as plt
@@ -96,8 +94,7 @@ def discriminator(inputs):
 
     x = Flatten()(x)
     x = Dense(1)(x)
-    # WGAN uses linear activation
-    x = Activation('linear')(x)
+    # No output activation in LSGAN
     discriminator = Model(inputs, x, name='discriminator')
     return discriminator
 
@@ -117,42 +114,36 @@ def train(models, x_train, params):
 
     """
     generator, discriminator, adversarial = models
-    batch_size, latent_size, n_critic, clip_value = params
-    train_steps = 40000
-    save_interval = 1000
+    batch_size, latent_size = params
+    train_steps = 10000
+    save_interval = 500
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
-        # Train Discriminator n_critic times
-        loss = 0
-        for _ in range(n_critic):
-            # Pick random real images
-            rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
-            real_images = x_train[rand_indexes, :, :, :]
-            # Generate fake images
-            noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
-            fake_images = generator.predict(noise)
+        # Pick random real images
+        rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
+        train_images = x_train[rand_indexes, :, :, :]
+        # Generate fake images
+        noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
+        fake_images = generator.predict(noise)
+        x = np.concatenate((train_images, fake_images))
+        # Label real and fake images
+        y = np.ones([2 * batch_size, 1])
+        y[batch_size:, :] = 0
+        # Train the Discriminator network
+        metrics = discriminator.train_on_batch(x, y)
+        loss = metrics[0]
+        accuracy = metrics[1]
+        log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
 
-            # Train the Discriminator network
-            real_loss, _ = discriminator.train_on_batch(real_images,
-                                                        -np.ones((batch_size, 1)))
-            fake_loss, _ = discriminator.train_on_batch(fake_images,
-                                                        np.ones((batch_size, 1)))
-            loss += 0.5 * np.add(fake_loss, real_loss)
-
-            # Clip Discriminator weights
-            for layer in discriminator.layers:
-                weights = layer.get_weights()
-                weights = [np.clip(weight, -clip_value, clip_value) for weight in weights]
-                layer.set_weights(weights)
-
-        log = "%d: [discriminator loss: %f]" % (i, loss/n_critic)
         # Generate fake images
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         # Label fake images as real
-        y = -np.ones([batch_size, 1])
+        y = np.ones([batch_size, 1])
         # Train the Adversarial network
-        loss, _ = adversarial.train_on_batch(noise, y)
-        log = "%s [adversarial loss: %f]" % (log, loss)
+        metrics = adversarial.train_on_batch(noise, y)
+        loss = metrics[0]
+        accuracy = metrics[1]
+        log = "%s [adversarial loss: %f, acc: %f]" % (log, loss, accuracy)
         print(log)
         if (i + 1) % save_interval == 0:
             if (i + 1) == train_steps:
@@ -164,8 +155,6 @@ def train(models, x_train, params):
                         show=show,
                         step=(i + 1))
 
-def wgan_loss(y_label, y_pred):
-    return K.mean(y_label*y_pred)
 
 def plot_images(generator,
                 noise_input,
@@ -183,7 +172,7 @@ def plot_images(generator,
         step (int): Appended to filename of the save images
 
     """
-    filename = "mnist_wgan_%d.png" % step
+    filename = "mnist_dcgan_%d.png" % step
     images = generator.predict(noise_input)
     plt.figure(figsize=(2.4, 2.4))
     num_images = images.shape[0]
@@ -202,14 +191,6 @@ def plot_images(generator,
         plt.close('all')
 
 
-# The latent or z vector is 100-dim
-latent_size = 100
-# Network parameters from [2]
-n_critic = 5
-clip_value = 0.01
-batch_size = 64
-lr = 0.00005
-
 # MNIST dataset
 (x_train, _), (_, _) = mnist.load_data()
 
@@ -217,15 +198,18 @@ image_size = x_train.shape[1]
 x_train = np.reshape(x_train, [-1, image_size, image_size, 1])
 x_train = x_train.astype('float32') / 255
 
+# The latent or z vector is 100-dim
+latent_size = 100
 input_shape = (image_size, image_size, 1)
+batch_size = 256
+lr = 0.0002
 
 # Build Discriminator Model
 inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs)
-# RMSprop
-optimizer = RMSprop(lr=lr)
-# WGAN discriminator uses wassertein loss
-discriminator.compile(loss=wgan_loss,
+# [1] uses Adam, but discriminator converges easily with RMSprop
+optimizer = RMSprop(lr=lr, decay=6e-8)
+discriminator.compile(loss='mse',
                       optimizer=optimizer,
                       metrics=['accuracy'])
 discriminator.summary()
@@ -237,15 +221,14 @@ generator = generator(inputs, image_size)
 generator.summary()
 
 # Build Adversarial Model = Generator + Discriminator
-optimizer = RMSprop(lr=lr)
-discriminator.trainable = False
-adversarial = Model(inputs, discriminator(generator(inputs)), name='wgan')
-adversarial.compile(loss=wgan_loss,
+optimizer = RMSprop(lr=lr*0.5, decay=3e-8)
+adversarial = Model(inputs, discriminator(generator(inputs)), name='lsgan')
+adversarial.compile(loss='mse',
                     optimizer=optimizer,
                     metrics=['accuracy'])
 adversarial.summary()
 
 # Train Discriminator and Adversarial Networks
 models = (generator, discriminator, adversarial)
-params = (batch_size, latent_size, n_critic, clip_value)
+params = (batch_size, latent_size)
 train(models, x_train, params)
