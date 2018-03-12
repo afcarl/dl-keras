@@ -103,7 +103,7 @@ def train(models, x_train, params):
     """Train the Discriminator and Adversarial Networks
 
     Alternately train Discriminator and Adversarial networks by batch
-    Discriminator is trained first with properly real and fake images
+    Discriminator is trained first with properly labelled real and fake images
     Adversarial is trained next with fake images pretending to be real
     Generate sample images per save_interval
 
@@ -115,12 +115,12 @@ def train(models, x_train, params):
     """
     generator, discriminator, adversarial = models
     batch_size, latent_size, train_steps = params
-    save_interval = 500
+    save_interval = 1000
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
         # Pick random real images
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
-        train_images = x_train[rand_indexes, :, :, :]
+        train_images = x_train[rand_indexes]
         # Generate fake images
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         fake_images = generator.predict(noise)
@@ -134,7 +134,7 @@ def train(models, x_train, params):
         accuracy = metrics[1]
         log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
 
-        # Generate fake images
+        # Generate random noise
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         # Label fake images as real
         y = np.ones([batch_size, 1])
