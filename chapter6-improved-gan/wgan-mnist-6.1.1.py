@@ -1,5 +1,10 @@
 '''Trains WGAN on MNIST using Keras
 
+Trains a GAN using Wassertein loss. Similar to DCGAN except for
+linear activation in output and use of n_critic training per
+adversarial training. Discriminator weights are clipped as a 
+requirement of Lipschitz constraint.
+
 [1] Radford, Alec, Luke Metz, and Soumith Chintala.
 "Unsupervised representation learning with deep convolutional
 generative adversarial networks." arXiv preprint arXiv:1511.06434 (2015).
@@ -107,6 +112,8 @@ def train(models, x_train, params):
 
     Alternately train Discriminator and Adversarial networks by batch
     Discriminator is trained first with properly real and fake images
+    for n_critic times. Discriminator weights are clipped as a requirement
+    of Lipschitz constraint.
     Adversarial is trained next with fake images pretending to be real
     Generate sample images per save_interval
 
@@ -119,14 +126,14 @@ def train(models, x_train, params):
     generator, discriminator, adversarial = models
     batch_size, latent_size, n_critic, clip_value = params
     train_steps = 40000
-    save_interval = 1000
+    save_interval = 500
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
         # Train Discriminator n_critic times
         loss = 0
         acc = 0
         for _ in range(n_critic):
-            # Pick random real images
+            # Random real images
             rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
             real_images = x_train[rand_indexes]
             # Generate fake images
@@ -145,6 +152,7 @@ def train(models, x_train, params):
                 weights = [np.clip(weight, -clip_value, clip_value) for weight in weights]
                 layer.set_weights(weights)
 
+        # Average loss and accuracy per n_critic
         loss /= n_critic
         acc /= n_critic
         log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, acc)

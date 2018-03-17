@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 def generator(inputs, y_labels, image_size):
     """Build a Generator Model
 
-    Inputs are concatenated after Dense layer.
+    Inputs are concatenated before Dense layer.
     Stacks of BN-ReLU-Conv2DTranpose to generate fake images
     Output activation is sigmoid instead of tanh in orig DCGAN.
     Sigmoid converges easily.
@@ -52,12 +52,16 @@ def generator(inputs, y_labels, image_size):
     kernel_size = 5
     layer_filters = [128, 64, 32, 1]
 
-    x = Dense(image_resize * image_resize * layer_filters[0])(inputs)
+    x = keras.layers.concatenate([inputs, y_labels], axis=1)
+    x = Dense(image_resize * image_resize * layer_filters[0])(x)
     x = Reshape((image_resize, image_resize, layer_filters[0]))(x)
 
-    y = Dense(image_resize * image_resize * 16)(y_labels)
-    y = Reshape((image_resize, image_resize, 16))(y)
-    x = keras.layers.concatenate([x, y])
+    # x = Dense(image_resize * image_resize * layer_filters[0])(inputs)
+    # x = Reshape((image_resize, image_resize, layer_filters[0]))(x)
+
+    # y = Dense(image_resize * image_resize * 16)(y_labels)
+    # y = Reshape((image_resize, image_resize, 16))(y)
+    # x = keras.layers.concatenate([x, y])
 
     for filters in layer_filters:
         if filters > layer_filters[-2]:
@@ -140,11 +144,11 @@ def train(models, data, params):
     generator, discriminator, adversarial = models
     x_train, y_train = data
     batch_size, latent_size, train_steps, num_labels = params
-    save_interval = 1000
+    save_interval = 500
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     noise_class = np.eye(num_labels)[np.random.choice(num_labels, 16)]
     for i in range(train_steps):
-        # Pick random real images and their labels
+        # Random real images and their labels
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
         real_images = x_train[rand_indexes]
         real_labels = y_train[rand_indexes]

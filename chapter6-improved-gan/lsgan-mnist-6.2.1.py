@@ -1,4 +1,7 @@
 '''Trains LSGAN on MNIST using Keras
+
+LSGAN is similar to DCGAN except for the MSE loss used by the 
+Discriminator and Adversarial networks.
   
 [1] Radford, Alec, Luke Metz, and Soumith Chintala.
 "Unsupervised representation learning with deep convolutional
@@ -115,16 +118,16 @@ def train(models, x_train, params):
     """
     generator, discriminator, adversarial = models
     batch_size, latent_size, train_steps = params
-    save_interval = 1000
+    save_interval = 500
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     for i in range(train_steps):
-        # Pick random real images
+        # Random real images
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
-        train_images = x_train[rand_indexes]
+        real_images = x_train[rand_indexes]
         # Generate fake images
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         fake_images = generator.predict(noise)
-        x = np.concatenate((train_images, fake_images))
+        x = np.concatenate((real_images, fake_images))
         # Label real and fake images
         y = np.ones([2 * batch_size, 1])
         y[batch_size:, :] = 0
