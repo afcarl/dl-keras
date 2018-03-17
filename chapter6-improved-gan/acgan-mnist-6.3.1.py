@@ -1,10 +1,10 @@
 '''Trains ACGAN on MNIST using Keras
 
-This version of CGAN is similar to DCGAN. The difference mainly
+This version of ACGAN is similar to DCGAN. The difference mainly
 is that the z-vector of geneerator is conditioned by a one-hot label
 to produce specific fake images. The discriminator is trained to
-discriminate real from fake images that are conditioned on
-specific one-hot labels.
+discriminate real from fake images and predict the corresponding
+one-hot labels.
 
 [1] Radford, Alec, Luke Metz, and Soumith Chintala.
 "Unsupervised representation learning with deep convolutional
@@ -80,16 +80,14 @@ def generator(inputs, y_labels, image_size):
 def discriminator(inputs, num_labels, image_size):
     """Build a Discriminator Model
 
-    Inputs are concatenated after Dense layer.
     Stacks of LeakyReLU-Conv2D to discriminate real from fake
     The network does not converge with BN so it is not used here
     unlike in DCGAN paper.
 
     # Arguments
         inputs (Layer): Input layer of the discriminator (the image)
-        y_labels (Layer): Input layer for one-hot vector to condition
-            the inputs
-        image_size: Target size of one side (assuming square image)
+        num_labels (int): Dimension of one-hot vector output
+        image_size (int): Target size of one side (assuming square image)
 
     # Returns
         Model: Discriminator Model
@@ -110,12 +108,16 @@ def discriminator(inputs, num_labels, image_size):
                    padding='same')(x)
 
     x = Flatten()(x)
+
+    # First output is probability that the image is real
+    y_source = Dense(1)(x)
+    y_source = Activation('sigmoid', name='source')(y_source)
+
+    # Second output is 10-dim one-hot vector of label
     y_class = Dense(layer_filters[-2])(x)
     y_class = Dense(num_labels)(x)
     y_class = Activation('softmax', name='label')(y_class)
 
-    y_source = Dense(1)(x)
-    y_source = Activation('sigmoid', name='source')(y_source)
     discriminator = Model(inputs, [y_source, y_class], name='discriminator')
     return discriminator
 
@@ -124,11 +126,10 @@ def train(models, data, params):
     """Train the Discriminator and Adversarial Networks
 
     Alternately train Discriminator and Adversarial networks by batch
-    Discriminator is trained first with properly real and fake images
-    Adversarial is trained next with fake images pretending to be real
-    Discriminator inputs are conditioned by train labels for real images,
-    and random labels for fake images
-    Adversarial inputs are conditioned by random labels
+    Discriminator is trained first with properly real and fake images with
+    corresponding one-hot labels
+    Adversarial is trained next with fake images pretending to be real with 
+    corresponding one-hot labels
     Generate sample images per save_interval
 
     # Arguments
@@ -144,7 +145,7 @@ def train(models, data, params):
     noise_input = np.random.uniform(-1.0, 1.0, size=[16, latent_size])
     noise_class = np.eye(num_labels)[np.random.choice(num_labels, 16)]
     for i in range(train_steps):
-        # Pick random real images and their labels
+        # Random real images and their labels
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
         real_images = x_train[rand_indexes, :, :, :]
         real_labels = y_train[rand_indexes, :]
@@ -209,7 +210,7 @@ def plot_images(generator,
         step (int): Appended to filename of the save images
 
     """
-    filename = "mnist_cgan_%d.png" % step
+    filename = "mnist_acgan_%d.png" % step
     images = generator.predict([noise_input, noise_class])
     print("Labels: ", np.argmax(noise_class, axis=1))
     plt.figure(figsize=(2.4, 2.4))
@@ -255,9 +256,9 @@ inputs = Input(shape=input_shape, name='discriminator_input')
 discriminator = discriminator(inputs, num_labels, image_size)
 # [1] uses Adam, but discriminator converges easily with RMSprop
 optimizer = RMSprop(lr=lr, decay=decay)
-# loss = {'source': 'binary_crossentropy', 'label': 'categorical_crossentropy'}
+# 2 loss fuctions: 1) Probability image is real
+# 2) Class label of the image
 loss = ['binary_crossentropy', 'categorical_crossentropy']
-# loss_weights = {'source': 1., 'label': 1,}
 discriminator.compile(loss=loss,
                       # loss_weights=loss_weights,
                       optimizer=optimizer,
