@@ -126,7 +126,7 @@ def train(models, x_train, params):
     for i in range(train_steps):
         # Pick random real images
         rand_indexes = np.random.randint(0, x_train.shape[0], size=batch_size)
-        train_images = x_train[rand_indexes, :, :, :]
+        train_images = x_train[rand_indexes]
         # Generate fake images
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         fake_images = generator.predict(noise)
@@ -137,18 +137,18 @@ def train(models, x_train, params):
         # Train the Discriminator network
         metrics = discriminator.train_on_batch(x, y)
         loss = metrics[0]
-        accuracy = metrics[1]
-        log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, accuracy)
+        acc = metrics[1]
+        log = "%d: [discriminator loss: %f, acc: %f]" % (i, loss, acc)
 
-        # Generate fake images
+        # Generate random noise
         noise = np.random.uniform(-1.0, 1.0, size=[batch_size, latent_size])
         # Label fake images as real
         y = np.ones([batch_size, 1])
         # Train the Adversarial network
         metrics = adversarial.train_on_batch(noise, y)
         loss = metrics[0]
-        accuracy = metrics[1]
-        log = "%s [adversarial loss: %f, acc: %f]" % (log, loss, accuracy)
+        acc = metrics[1]
+        log = "%s [adversarial loss: %f, acc: %f]" % (log, loss, acc)
         print(log)
         if (i + 1) % save_interval == 0:
             if (i + 1) == train_steps:
