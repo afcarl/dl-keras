@@ -260,7 +260,6 @@ optimizer = RMSprop(lr=lr, decay=decay)
 # 2) Class label of the image
 loss = ['binary_crossentropy', 'categorical_crossentropy']
 discriminator.compile(loss=loss,
-                      # loss_weights=loss_weights,
                       optimizer=optimizer,
                       metrics=['accuracy'])
 discriminator.summary()
@@ -278,7 +277,6 @@ discriminator.trainable = False
 adversarial = Model([inputs, y_labels],
                     discriminator(generator([inputs, y_labels])),
                     name='acgan')
-# loss = ['binary_crossentropy', 'categorical_crossentropy']
 adversarial.compile(loss=loss,
                     optimizer=optimizer,
                     metrics=['accuracy'])
